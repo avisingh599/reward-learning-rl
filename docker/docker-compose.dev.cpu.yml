@@ -28,6 +28,8 @@ services:
        - ~/.config/gcloud:/root/.config/gcloud  # If using gcp, e.g. for gs
        - ~/.mujoco:/root/.mujoco  # mjkey.txt
        - ..:/root/softlearning
+       - ../data:/root/ray_results
+       - ../../proj_4/gym-larry:/root/gym-larry
     command:
       - bash
     stdin_open: true

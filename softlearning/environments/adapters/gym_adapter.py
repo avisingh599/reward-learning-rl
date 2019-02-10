@@ -4,6 +4,9 @@ import numpy as np
 import gym
 from gym import spaces, wrappers
 
+import torch
+from torch.autograd import Variable
+
 from multiworld.envs.pygame.point2d import Point2DEnv, Point2DWallEnv
 
 from .softlearning_env import SoftlearningEnv
@@ -121,9 +124,10 @@ class GymAdapter(SoftlearningEnv):
     """Adapter that implements the SoftlearningEnv for Gym envs."""
 
     def __init__(self,
-                 domain,
-                 task,
                  *args,
+                 domain=None,
+                 task=None,
+                 env=None,
                  normalize=True,
                  observation_keys=None,
                  unwrap_time_limit=True,
@@ -135,7 +139,12 @@ class GymAdapter(SoftlearningEnv):
         self._Serializable__initialize(locals())
         super(GymAdapter, self).__init__(domain, task, *args, **kwargs)
 
-        env = GYM_ENVIRONMENTS[domain][task](*args, **kwargs)
+        if env is not None:
+            assert domain is None and task is None
+            env = env
+        else:
+            assert domain is not None and task is not None
+            env = GYM_ENVIRONMENTS[domain][task](*args, **kwargs)
 
         if isinstance(env, wrappers.TimeLimit) and unwrap_time_limit:
             # Remove the TimeLimit wrapper that sets 'done = True' when
@@ -231,3 +240,132 @@ class GymAdapter(SoftlearningEnv):
 
     def set_param_values(self, *args, **kwargs):
         raise NotImplementedError
+
+class GymAdapterAutoEncoder(GymAdapter):
+
+    def __init__(self,
+                 autoencoder_model,
+                 autoencoder_savepath,
+                 *args,
+                 domain=None,
+                 task=None,
+                 env=None,
+                 use_jointstate=False,
+                 normalize=True,
+                 observation_keys=None,
+                 unwrap_time_limit=True,
+                 **kwargs):
+        #self.normalize = normalize
+        #self.observation_keys = observation_keys
+        #self.unwrap_time_limit = unwrap_time_limit
+
+        self._Serializable__initialize(locals())
+        super(GymAdapterAutoEncoder, self).__init__(
+                                    *args,
+                                    domain=domain, task=task, env=env, 
+                                    normalize=normalize, 
+                                    observation_keys=observation_keys,
+                                    unwrap_time_limit=unwrap_time_limit, 
+                                    **kwargs)
+        self._autoencoder_savepath = autoencoder_savepath
+        self._use_jointstate = use_jointstate
+        if use_jointstate:
+            self._joint_space = self._env.env.joint_space
+
+        # import pdb; pdb.set_trace()
+        # if isinstance(autoencoder_savepath, str):
+        #     self._autoencoder = torch.load(autoencoder_savepath)
+        # else:
+        #     self._autoencoder = autoencoder_savepath
+
+        #import pdb; pdb.set_trace()
+        self._autoencoder = autoencoder_model
+        self._autoencoder.load_state_dict(torch.load(autoencoder_savepath))
+        self._autoencoder.cuda()
+        self._autoencoder.eval()
+
+        #self._autoencoder.eval()
+        #import pdb; pdb.set_trace()
+        image = np.zeros(
+            (self._env.env.camera_height, self._env.env.camera_width, self._env.env.camera_channels),
+            dtype=np.float32
+        )
+        feature_points = self.feature_points(image)
+        self._feature_dim = feature_points.shape[-1]
+
+        if self._use_jointstate:
+            self._joint_dim = self._env.env.joint_space.flat_dim
+            new_dim = self._joint_dim + self._feature_dim
+        else:
+            new_dim = self._feature_dim
+        self._observation_space = spaces.Box(
+            low=-np.inf, high=np.inf, shape=[new_dim],
+        )
+
+
+    def step(self, action, *args, **kwargs):
+        _obs, reward, done, env_infos = self._env.step(action, *args, **kwargs)
+        obs = self._get_obs()
+        return obs, reward, done, env_infos
+
+    # def step(self, action, *args, **kwargs):
+    #     # TODO(hartikainen): refactor this to always return an OrderedDict,
+    #     # such that the observations for all the envs is consistent. Right now
+    #     # some of the gym envs return np.array whereas others return dict.
+    #     #
+    #     # Something like:
+    #     # observation = OrderedDict()
+    #     # observation['observation'] = env.step(action, *args, **kwargs)
+    #     # return observation
+
+    #     return self._env.step(action, *args, **kwargs)
+
+    @property
+    def observation_space(self):
+        return self._observation_space
+
+    @property
+    def joint_space(self):
+        return self._joint_space
+
+    def feature_points(self, image):
+        """Image in HWC format"""
+        dim = len(image.shape)
+        if dim == 3:
+            image = image[None]
+        image = image.transpose((0, 3, 1, 2))
+        torch_image = torch.from_numpy(image)
+        torch_image = Variable(torch_image.cuda()).float()
+        torch_fp = self._autoencoder.features(torch_image)
+        fp = torch_fp.data.cpu().numpy()
+        if dim == 3:
+            fp = fp[0]
+        return fp
+
+    def reconstruction(self, image):
+        dim = len(image.shape)
+        if dim == 3:
+            image = image[None]
+        image = image.transpose((0, 3, 1, 2))
+        torch_image = torch.from_numpy(image)
+        torch_image = Variable(torch_image.cuda()).float()
+        reconstruction = self._autoencoder.reconstruction(torch_image)
+        reconstruction = reconstruction.data.cpu().numpy()
+        if dim == 3:
+            reconstruction = reconstruction[0]
+        reconstruction = reconstruction.transpose((1, 2, 0))
+        return reconstruction
+
+    def reset(self):
+        self._env.reset()
+        return self._get_obs()
+
+    def _get_obs(self):
+        image = self._env.env.get_image()
+        fp = self.feature_points(image)
+
+        if self._use_jointstate:
+            joint_obs = self._env.env._get_jointstate()
+            return np.concatenate([fp, joint_obs])
+        else:
+            return fp
