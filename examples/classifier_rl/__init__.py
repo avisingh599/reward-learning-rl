@@ -7,8 +7,8 @@ In particular, the examples are exposed to the command line interface
 
 
 def get_trainable_class(*args, **kwargs):
-    from .main import ExperimentRunnverClassifierRL
-    return ExperimentRunnverClassifierRL
+    from .main import ExperimentRunnerClassifierRL
+    return ExperimentRunnerClassifierRL
 
 
 def get_variant_spec(command_line_args, *args, **kwargs):

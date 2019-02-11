@@ -83,6 +83,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'action_prior': 'uniform',
             'n_initial_exploration_steps': int(1e3),
             'n_classifier_train_steps': int(1e4),
+            'classifier_optim_name': 'adam'
         }
     },
 
@@ -262,6 +263,26 @@ def get_variant_spec_base(universe, domain, task, policy, algorithm):
     return variant_spec
 
 
+def get_variant_spec_classifier(universe,
+                                domain,
+                                task,
+                                policy,
+                                algorithm,
+                                *args,
+                                **kwargs):
+    variant_spec = get_variant_spec_base(
+        universe, domain, task, policy, algorithm, *args, **kwargs)
+    
+    classifier_layer_size = L = 256
+    variant_spec['classifier_params'] = {
+            'type': 'feedforward_classifier',
+            'kwargs': {
+                'hidden_layer_sizes': (L,L),
+            }
+        }
+
+    return variant_spec
+
 # def get_variant_spec_image(universe,
 #                            domain,
 #                            task,
@@ -295,7 +316,7 @@ def get_variant_spec_base(universe, domain, task, policy, algorithm):
 
 
 def get_variant_spec(args):
-    universe, domain, task = args.universe, args.domain, args.task
+    universe, domain, task, algorithm = args.universe, args.domain, args.task, args.algorithm
 
     # if ('image' in task.lower()
     #     or 'blind' in task.lower()
@@ -303,9 +324,12 @@ def get_variant_spec(args):
     #     variant_spec = get_variant_spec_image(
     #         universe, domain, task, args.policy, args.algorithm)
     # else:
-
-    variant_spec = get_variant_spec_base(
-        universe, domain, task, args.policy, args.algorithm)
+    if args.algorithm in ['SACClassifier']:
+        variant_spec = get_variant_spec_classifier(
+            universe, domain, task, args.policy, args.algorithm)
+    else:
+        variant_spec = get_variant_spec_base(
+            universe, domain, task, args.policy, args.algorithm)
 
     if args.checkpoint_replay_pool is not None:
         variant_spec['run_params']['checkpoint_replay_pool'] = (

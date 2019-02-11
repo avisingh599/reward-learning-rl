@@ -1,7 +1,7 @@
 from softlearning.models.feedforward import feedforward_model
 
 
-def create_feedforward_classifier(observation_shape,
+def create_feedforward_reward_classifier(observation_shape,
                                   *args,
                                   observation_preprocessor=None,
                                   name='feedforward_classifier',

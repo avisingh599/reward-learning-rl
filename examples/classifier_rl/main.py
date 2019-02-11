@@ -13,6 +13,7 @@ from softlearning.policies.utils import get_policy_from_variant, get_policy
 from softlearning.replay_pools.utils import get_replay_pool_from_variant
 from softlearning.samplers.utils import get_sampler_from_variant
 from softlearning.value_functions.utils import get_Q_function_from_variant
+from softlearning.models.utils import get_reward_classifier_from_variant
 
 from softlearning.misc.utils import set_seed, initialize_tf_variables
 from examples.instrument import run_example_local
@@ -24,7 +25,7 @@ from gym.envs.mujoco.multitask.sawyer_pusher_multienv import \
     SawyerPushXYMultiEnv
 from softlearning.autoencoder.autoencoder import AE
 
-class ExperimentRunnverClassifierRL(ExperimentRunner):
+class ExperimentRunnerClassifierRL(ExperimentRunner):
 
     def _build(self):
         variant = copy.deepcopy(self._variant)
@@ -51,17 +52,30 @@ class ExperimentRunnverClassifierRL(ExperimentRunner):
         policy = self.policy = get_policy_from_variant(variant, env, Qs)
         initial_exploration_policy = self.initial_exploration_policy = (
             get_policy('UniformPolicy', env))
-        classifier = 
-        self.algorithm = get_algorithm_from_variant(
-            variant=self._variant,
-            env=self.env,
-            policy=policy,
-            initial_exploration_policy=initial_exploration_policy,
-            Qs=Qs,
-            pool=replay_pool,
-            sampler=sampler,
-            session=self._session,
-            classifier=classifier)
+
+        algorithm_kwargs = {
+            'variant': self._variant,
+            'env': self.env,
+            'policy': policy,
+            'initial_exploration_policy': initial_exploration_policy,
+            'Qs': Qs,
+            'pool': replay_pool,
+            'sampler': sampler,
+            'session': self._session,
+        }
+
+        if self._variant['algorithm_params']['type'] == 'SACClassifier':
+            reward_classifier = get_reward_classifier_from_variant(self._variant, env)
+            algorithm_kwargs['classifier'] = reward_classifier
+
+            goal_images = env._env.env.get_expert_images()
+            goal_aefeatures = env.feature_points(goal_images)
+            goal_examples = goal_aefeatures
+
+            algorithm_kwargs['goal_examples'] = goal_examples
+
+        self.algorithm = get_algorithm_from_variant(**algorithm_kwargs)
+
 
         # self.algorithm = get_algorithm_from_variant(
         #     variant=self._variant,
@@ -71,7 +85,10 @@ class ExperimentRunnverClassifierRL(ExperimentRunner):
         #     Qs=Qs,
         #     pool=replay_pool,
         #     sampler=sampler,
-        #     session=self._session)
+        #     session=self._session,
+        #     #classifier=classifier,
+        #     )
+
 
         initialize_tf_variables(self._session, only_uninitialized=True)
 
