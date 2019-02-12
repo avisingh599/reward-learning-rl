@@ -12,9 +12,10 @@ class SACClassifier(SAC):
             self,
             classifier,
             goal_examples,
-            classifier_lr=1e-4, #TODO add this to variants/ExerimentRunner/utils
-            classifier_batch_size=128, #TODO add this to variant
-            n_classifier_train_steps=int(1e4),
+            classifier_lr=1e-4,
+            classifier_batch_size=128,
+            n_classifier_train_steps_init=int(1e4),
+            n_classifier_train_steps_update=int(1e3),
             classifier_optim_name='adam',
             **kwargs,
     ):
@@ -22,21 +23,18 @@ class SACClassifier(SAC):
         self._classifier = classifier
         self._goal_examples = goal_examples
         self._classifier_lr = classifier_lr
-        self._n_classifier_train_steps = n_classifier_train_steps
+        self._n_classifier_train_steps_init = n_classifier_train_steps_init
+        self._n_classifier_train_steps_update = n_classifier_train_steps_update
         self._classifier_optim_name = classifier_optim_name
         self._classifier_batch_size = classifier_batch_size
 
+
         super(SACClassifier, self).__init__(**kwargs)
-
+    
     def _build(self):
-        self._training_ops = {}
-
-        self._init_global_step()
-        self._init_placeholders()
+        super(SACClassifier, self)._build()
         self._init_classifier_update()
-        self._init_actor_update()
-        self._init_critic_update()
-
+    
     def _init_placeholders(self):
         super(SACClassifier, self)._init_placeholders()
         self._label_ph = tf.placeholder(
@@ -57,6 +55,9 @@ class SACClassifier(SAC):
         min_next_Q = tf.reduce_min(next_Qs_values, axis=0)
         next_value = min_next_Q - self._alpha * next_log_pis
 
+        observation_logits = self._classifier([self._observations_ph])
+        self._reward_t = tf.nn.sigmoid(observation_logits)
+
         Q_target = td_target(
             reward=self._reward_scale * self._reward_t,
             discount=self._discount,
@@ -69,7 +70,7 @@ class SACClassifier(SAC):
         logits = self._classifier([self._observations_ph])
         #logits = tf.expand_dims(logits, axis=-1)
         # self._discriminator_t = tf.squeeze(tf.nn.sigmoid(logits), axis=-1)
-        self._discriminator_t = tf.nn.sigmoid(logits)
+        #self._discriminator_t = tf.nn.sigmoid(logits)
 
         #classifier_logprob = -1*tf.nn.relu(energy)
         #classifier_logprob = -10*tf.nn.sigmoid(classifier_output_linear)
@@ -77,7 +78,7 @@ class SACClassifier(SAC):
         cross_entropy_t = tf.nn.sigmoid_cross_entropy_with_logits(
             logits=logits, labels=self._label_ph)
         self._classifier_loss_t = tf.reduce_mean(cross_entropy_t)
-        self._reward_t = self._discriminator_t
+        #self._reward_t = self._discriminator_t
 
         if self._classifier_optim_name == 'adam':
             self._classifier_optimizer = tf.train.AdamOptimizer(
@@ -124,7 +125,7 @@ class SACClassifier(SAC):
     def _epoch_after_hook(self, *args, **kwargs):
         """Hook called at the end of each epoch."""
         #TODO Avi remove the 1000 and put in a parameter for it
-        for i in range(1000):
+        for i in range(self._n_classifier_train_steps_update):
             self._train_classifier_step()
         #import pdb; pdb.set_trace()
 
@@ -136,21 +137,35 @@ class SACClassifier(SAC):
         diagnostics = super(SACClassifier, self).get_diagnostics(
             iteration, batch, training_paths, evaluation_paths)
         
-        sample_obs = batch['observations']
-        reward_sample_obs = self._session.run(
-                                    self._reward_t, 
-                                    feed_dict = {self._observations_ph: sample_obs})
+        sample_observations = batch['observations']
+        goal_index = np.random.randint(self._goal_examples.shape[0],
+                                       size=sample_observations.shape[0])
+        goal_observations = self._goal_examples[goal_index]
 
-        rand_ind = np.random.randint(self._goal_examples.shape[0], 
-                                        size=sample_obs.shape[0])
-        goal_obs = self._goal_examples[rand_ind]
-        reward_goal_obs = self._session.run(
-                                    self._reward_t, 
-                                    feed_dict = {self._observations_ph: goal_obs})
+        sample_goal_observations = np.concatenate(
+            (sample_observations, goal_observations), axis=0)
 
-        classifier_loss = self._train_classifier_step()
-        diagnostics['reward_learning/classifier_loss'] = np.mean(classifier_loss)
-        diagnostics['reward_learning/reward_sample_obs_mean'] = np.mean(reward_sample_obs)
-        diagnostics['reward_learning/reward_goal_obs_mean'] = np.mean(reward_goal_obs)
-        
+        reward_sample_goal_observations, classifier_loss = self._session.run(
+            [self._reward_t, self._classifier_loss_t],
+            feed_dict={self._observations_ph: sample_goal_observations,
+                       self._label_ph: np.concatenate([
+                                    np.zeros((sample_observations.shape[0],1)),
+                                    np.ones((goal_observations.shape[0],1)),
+                                    ])
+                        }
+            )
+
+        reward_sample_observations, reward_goal_observations = np.split(
+            reward_sample_goal_observations,
+            (sample_observations.shape[0],),
+            axis=0)
+
+        diagnostics.update({
+            'reward_learning/classifier_loss': np.mean(classifier_loss),
+            'reward_learning/reward_sample_obs_mean': np.mean(
+                reward_sample_observations),
+            'reward_learning/reward_goal_obs_mean': np.mean(
+                reward_goal_observations),
+        })
+
         return diagnostics
