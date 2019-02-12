@@ -14,6 +14,7 @@ class SACClassifier(SAC):
             goal_examples,
             classifier_lr=1e-4,
             classifier_batch_size=128,
+            reward_type = 'logits',
             n_classifier_train_steps_init=int(1e4),
             n_classifier_train_steps_update=int(1e3),
             classifier_optim_name='adam',
@@ -23,11 +24,11 @@ class SACClassifier(SAC):
         self._classifier = classifier
         self._goal_examples = goal_examples
         self._classifier_lr = classifier_lr
+        self._reward_type = reward_type
         self._n_classifier_train_steps_init = n_classifier_train_steps_init
         self._n_classifier_train_steps_update = n_classifier_train_steps_update
         self._classifier_optim_name = classifier_optim_name
         self._classifier_batch_size = classifier_batch_size
-
 
         super(SACClassifier, self).__init__(**kwargs)
     
@@ -56,7 +57,12 @@ class SACClassifier(SAC):
         next_value = min_next_Q - self._alpha * next_log_pis
 
         observation_logits = self._classifier([self._observations_ph])
-        self._reward_t = tf.nn.sigmoid(observation_logits)
+        if self._reward_type == 'logits':
+            self._reward_t = observation_logits
+        elif self._reward_type == 'probabilities':
+            self._reward_t = tf.nn.sigmoid(observation_logits)
+        else:
+            raise NotImplementedError('Unknown reward type: {}'.format(self._reward_type))
 
         Q_target = td_target(
             reward=self._reward_scale * self._reward_t,
@@ -81,11 +87,15 @@ class SACClassifier(SAC):
         #self._reward_t = self._discriminator_t
 
         if self._classifier_optim_name == 'adam':
-            self._classifier_optimizer = tf.train.AdamOptimizer(
-                                        learning_rate=self._classifier_lr,
-                                        name='classifier_optimizer')
+            opt_func = tf.train.AdamOptimizer
+        elif self._classifier_optim_name == 'sgd':
+            opt_func = tf.train.GradientDescentOptimizer
         else:
             raise NotImplementedError
+
+        self._classifier_optimizer = opt_func(
+                            learning_rate=self._classifier_lr,
+                            name='classifier_optimizer')
 
         self._classifier_training_op = \
             tf.contrib.layers.optimize_loss(

@@ -81,9 +81,16 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'target_entropy': 'auto',
             'store_extra_policy_info': False,
             'action_prior': 'uniform',
+            'classifier_lr': 1e-4,
+            'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
-            'n_classifier_train_steps': int(1e4),
-            'classifier_optim_name': 'adam'
+            'n_classifier_train_steps_init': int(1e4),
+            'n_classifier_train_steps_update': int(1e4),
+            # 'classifier_optim_name': 'adam',
+            # 'reward_type': 'logits',
+            'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
+            'reward_type': tune.grid_search(['logits', 'probabilities']),
+            'n_epochs': 300,
         }
     },
 
