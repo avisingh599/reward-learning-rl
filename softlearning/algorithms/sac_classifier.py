@@ -57,9 +57,6 @@ class SACClassifier(SAC):
         min_next_Q = tf.reduce_min(next_Qs_values, axis=0)
         next_value = min_next_Q - self._alpha * next_log_pis
 
-        # rewards = self._classifier(self._observations_ph)[:,0]
-        #rewards = self._discriminator_t
-
         Q_target = td_target(
             reward=self._reward_scale * self._reward_t,
             discount=self._discount,
@@ -68,7 +65,6 @@ class SACClassifier(SAC):
         return Q_target
 
     def _init_classifier_update(self):
-        #import pdb; pdb.set_trace()
         #TODO Avi modify this to match whatever we do in VICE
         logits = self._classifier([self._observations_ph])
         #logits = tf.expand_dims(logits, axis=-1)
@@ -80,11 +76,8 @@ class SACClassifier(SAC):
         
         cross_entropy_t = tf.nn.sigmoid_cross_entropy_with_logits(
             logits=logits, labels=self._label_ph)
-        self._loss_t = tf.reduce_mean(cross_entropy_t)
+        self._classifier_loss_t = tf.reduce_mean(cross_entropy_t)
         self._reward_t = self._discriminator_t
-
-        # self._classifier_train_op = tf.train.AdamOptimizer(self._classifier_lr).minimize(
-        #         loss=self._loss_t, var_list=self._classifier.get_params_internal())
 
         if self._classifier_optim_name == 'adam':
             self._classifier_optimizer = tf.train.AdamOptimizer(
@@ -95,7 +88,7 @@ class SACClassifier(SAC):
 
         self._classifier_training_op = \
             tf.contrib.layers.optimize_loss(
-                self._loss_t,
+                self._classifier_loss_t,
                 self.global_step,
                 learning_rate=self._classifier_lr,
                 optimizer=self._classifier_optimizer,
@@ -125,32 +118,39 @@ class SACClassifier(SAC):
 
     def _train_classifier_step(self):
         feed_dict = self._get_classifier_feed_dict()
-        self._session.run(self._classifier_training_op, feed_dict)
-    
+        _, loss = self._session.run([self._classifier_training_op, self._classifier_loss_t], feed_dict)
+        return loss
+
     def _epoch_after_hook(self, *args, **kwargs):
         """Hook called at the end of each epoch."""
         #TODO Avi remove the 1000 and put in a parameter for it
         for i in range(1000):
             self._train_classifier_step()
+        #import pdb; pdb.set_trace()
 
-        #pass
+    def get_diagnostics(self,
+                        iteration,
+                        batch,
+                        training_paths,
+                        evaluation_paths):
+        diagnostics = super(SACClassifier, self).get_diagnostics(
+            iteration, batch, training_paths, evaluation_paths)
+        
+        sample_obs = batch['observations']
+        reward_sample_obs = self._session.run(
+                                    self._reward_t, 
+                                    feed_dict = {self._observations_ph: sample_obs})
 
-    # def _get_Q_target(self):
-    #     #TODO Avi make sure it uses self._reward_t instead of 
-    #     next_actions = self._policy.actions([self._next_observations_ph])
-    #     next_log_pis = self._policy.log_pis(
-    #         [self._next_observations_ph], next_actions)
+        rand_ind = np.random.randint(self._goal_examples.shape[0], 
+                                        size=sample_obs.shape[0])
+        goal_obs = self._goal_examples[rand_ind]
+        reward_goal_obs = self._session.run(
+                                    self._reward_t, 
+                                    feed_dict = {self._observations_ph: goal_obs})
 
-    #     next_Qs_values = tuple(
-    #         Q([self._next_observations_ph, next_actions])
-    #         for Q in self._Q_targets)
-
-    #     min_next_Q = tf.reduce_min(next_Qs_values, axis=0)
-    #     next_value = min_next_Q - self._alpha * next_log_pis
-
-    #     Q_target = td_target(
-    #         reward=self._reward_scale * self._rewards_ph,
-    #         discount=self._discount,
-    #         next_value=(1 - self._terminals_ph) * next_value)
-
-    #     return Q_target
+        classifier_loss = self._train_classifier_step()
+        diagnostics['reward_learning/classifier_loss'] = np.mean(classifier_loss)
+        diagnostics['reward_learning/reward_sample_obs_mean'] = np.mean(reward_sample_obs)
+        diagnostics['reward_learning/reward_goal_obs_mean'] = np.mean(reward_goal_obs)
+        
+        return diagnostics
