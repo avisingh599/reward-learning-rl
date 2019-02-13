@@ -2,7 +2,8 @@ import multiprocessing
 import argparse
 from distutils.util import strtobool
 import json
-import os
+
+from ray.tune import sample_from
 
 import softlearning.algorithms.utils as alg_utils
 import softlearning.environments.utils as env_utils
@@ -14,9 +15,10 @@ DEFAULT_DOMAIN = 'Swimmer'
 DEFAULT_TASK = 'Default'
 DEFAULT_ALGORITHM = 'SAC'
 
+
 TASKS_BY_DOMAIN_BY_UNIVERSE = {
     universe: {
-        domain: tuple(tasks.keys())
+        domain: tuple(tasks)
         for domain, tasks in domains.items()
     }
     for universe, domains in env_utils.ENVIRONMENTS.items()
@@ -31,13 +33,13 @@ AVAILABLE_TASKS = set(sum(
     ()))
 
 DOMAINS_BY_UNIVERSE = {
-    universe: tuple(domains.keys())
+    universe: tuple(domains)
     for universe, domains in env_utils.ENVIRONMENTS.items()
 }
 
 AVAILABLE_DOMAINS = set(sum(DOMAINS_BY_UNIVERSE.values(), ()))
 
-UNIVERSES = tuple(env_utils.ENVIRONMENTS.keys())
+UNIVERSES = tuple(env_utils.ENVIRONMENTS)
 
 AVAILABLE_ALGORITHMS = set(alg_utils.ALGORITHM_CLASSES.keys())
 
@@ -160,6 +162,13 @@ def add_ray_tune_args(parser):
         default='',
         help=tune_help_string("Optional URI to sync training results to (e.g."
                               " s3://<bucket> or gs://<bucket>)."))
+    parser.add_argument(
+        '--trial-name-template',
+        type=str,
+        default=None,
+        help=tune_help_string(
+            "Optional string template for trial name. For example:"
+            " '{trial.trial_id}-seed={trial.config[run_params][seed]}'"))
     parser.add_argument(
         '--trial-name-creator',
         default=None,
@@ -284,4 +293,4 @@ def variant_equals(*keys):
 
         return node
 
-    return get_from_spec
+    return sample_from(get_from_spec)
