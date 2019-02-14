@@ -7,6 +7,13 @@ def create_SAC_Classifier_algorithm(variant, *args, **kwargs):
 
     return algorithm
 
+def create_RAQ_algorithm(variant, *args, **kwargs):
+    from .raq import RAQ
+
+    algorithm = RAQ(*args, **kwargs)
+
+    return algorithm
+
 def create_SAC_algorithm(variant, *args, **kwargs):
     from .sac import SAC
 
@@ -27,6 +34,7 @@ ALGORITHM_CLASSES = {
     'SAC': create_SAC_algorithm,
     'SQL': create_SQL_algorithm,
     'SACClassifier': create_SAC_Classifier_algorithm,
+    'RAQ': create_RAQ_algorithm,
 }
 
 

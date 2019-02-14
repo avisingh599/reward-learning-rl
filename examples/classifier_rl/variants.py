@@ -47,7 +47,7 @@ ALGORITHM_PARAMS_BASE = {
         'train_every_n_steps': 1,
         'n_train_repeat': 1,
         'eval_render_mode': None,
-        'eval_n_episodes': 1,
+        'eval_n_episodes': 5,
         'eval_deterministic': True,
 
         'discount': 0.99,
@@ -86,10 +86,30 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'n_initial_exploration_steps': int(1e3),
             'n_classifier_train_steps_init': int(1e4),
             'n_classifier_train_steps_update': int(1e4),
-            # 'classifier_optim_name': 'adam',
-            # 'reward_type': 'logits',
-            'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
-            'reward_type': tune.grid_search(['logits', 'probabilities']),
+            # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
+            'classifier_optim_name': 'sgd',
+            'reward_type': 'logits',
+            'n_epochs': 300,
+        }
+    },
+    'RAQ': {
+        'type': 'RAQ',
+        'kwargs': {
+            'reparameterize': REPARAMETERIZE,
+            'lr': 3e-4,
+            'target_update_interval': 1,
+            'tau': 5e-3,
+            'target_entropy': 'auto',
+            'store_extra_policy_info': False,
+            'action_prior': 'uniform',
+            'classifier_lr': 1e-4,
+            'classifier_batch_size': 128,
+            'n_initial_exploration_steps': int(1e3),
+            'n_classifier_train_steps_init': int(1e4),
+            'n_classifier_train_steps_update': int(1e4),
+            # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
+            'classifier_optim_name': 'sgd',
+            'reward_type': 'logits',
             'n_epochs': 300,
         }
     },
@@ -288,6 +308,28 @@ def get_variant_spec_classifier(universe,
             }
         }
 
+    if algorithm in ['RAQ']:
+        variant_spec.update({
+
+            'sampler_params': {
+                'type': 'ActiveSampler',
+                'kwargs': {
+                    'max_path_length': MAX_PATH_LENGTH_PER_DOMAIN.get(
+                        domain, DEFAULT_MAX_PATH_LENGTH),
+                    'min_pool_size': MAX_PATH_LENGTH_PER_DOMAIN.get(
+                        domain, DEFAULT_MAX_PATH_LENGTH),
+                    'batch_size': 256,
+                }
+            },
+            'replay_pool_params': {
+                'type': 'ActiveReplayPool',
+                'kwargs': {
+                    'max_size': 1e6,
+                }
+            },
+
+            })
+
     return variant_spec
 
 # def get_variant_spec_image(universe,
@@ -331,7 +373,7 @@ def get_variant_spec(args):
     #     variant_spec = get_variant_spec_image(
     #         universe, domain, task, args.policy, args.algorithm)
     # else:
-    if args.algorithm in ['SACClassifier']:
+    if args.algorithm in ['SACClassifier', 'RAQ']:
         variant_spec = get_variant_spec_classifier(
             universe, domain, task, args.policy, args.algorithm)
     else:

@@ -167,6 +167,13 @@ def add_ray_tune_args(parser):
             "Optional creator function for the trial string, used in "
             "generating a trial directory."))
     parser.add_argument(
+        '--trial-name-template',
+        type=str,
+        default=None,
+        help=tune_help_string(
+            "Optional string template for trial name. For example:"
+            " '{trial.trial_id}-seed={trial.config[run_params][seed]}'"))
+    parser.add_argument(
         '--trial-cpus',
         type=int,
         default=multiprocessing.cpu_count(),

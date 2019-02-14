@@ -64,7 +64,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             'session': self._session,
         }
 
-        if self._variant['algorithm_params']['type'] == 'SACClassifier':
+        if self._variant['algorithm_params']['type'] in ['SACClassifier', 'RAQ']:
             reward_classifier = get_reward_classifier_from_variant(self._variant, env)
             algorithm_kwargs['classifier'] = reward_classifier
 

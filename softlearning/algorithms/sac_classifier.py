@@ -1,6 +1,3 @@
-from collections import OrderedDict
-from numbers import Number
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.training import training_util
@@ -35,7 +32,7 @@ class SACClassifier(SAC):
     def _build(self):
         super(SACClassifier, self)._build()
         self._init_classifier_update()
-    
+
     def _init_placeholders(self):
         super(SACClassifier, self)._init_placeholders()
         self._label_ph = tf.placeholder(
@@ -127,17 +124,14 @@ class SACClassifier(SAC):
 
         return feed_dict
 
-    def _train_classifier_step(self):
-        feed_dict = self._get_classifier_feed_dict()
+    def _train_classifier_step(self, feed_dict):
         _, loss = self._session.run([self._classifier_training_op, self._classifier_loss_t], feed_dict)
         return loss
 
     def _epoch_after_hook(self, *args, **kwargs):
-        """Hook called at the end of each epoch."""
-        #TODO Avi remove the 1000 and put in a parameter for it
         for i in range(self._n_classifier_train_steps_update):
-            self._train_classifier_step()
-        #import pdb; pdb.set_trace()
+            feed_dict = self._get_classifier_feed_dict()
+            self._train_classifier_step(feed_dict)
 
     def get_diagnostics(self,
                         iteration,
