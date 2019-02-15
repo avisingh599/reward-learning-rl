@@ -14,6 +14,20 @@ def create_RAQ_algorithm(variant, *args, **kwargs):
 
     return algorithm
 
+def create_VICE_algorithm(variant, *args, **kwargs):
+    from .vice import VICE
+
+    algorithm = VICE(*args, **kwargs)
+
+    return algorithm
+
+def create_VICE_RAQ_algorithm(variant, *args, **kwargs):
+    from .viceraq import VICERAQ
+
+    algorithm = VICERAQ(*args, **kwargs)
+
+    return algorithm
+
 def create_SAC_algorithm(variant, *args, **kwargs):
     from .sac import SAC
 
@@ -35,6 +49,8 @@ ALGORITHM_CLASSES = {
     'SQL': create_SQL_algorithm,
     'SACClassifier': create_SAC_Classifier_algorithm,
     'RAQ': create_RAQ_algorithm,
+    'VICE': create_VICE_algorithm,
+    'VICERAQ': create_VICE_RAQ_algorithm,
 }
 
 

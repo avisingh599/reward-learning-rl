@@ -35,16 +35,18 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         #'/root/sac-plus/experiments/autoencoder/sawyer_pusher_texture/ae.pwf',
 
         env = self.env = GymAdapterAutoEncoder(
-                    env=SawyerPushXYMultiEnv(
-                            task_id=40, 
-                            hide_goal=True,
-                            texture=True,
-                            pos_noise=0.0,
-                            randomize_gripper=False,
-                            forward_only=False,
-                            ),
-                    autoencoder_model=AE(),
-                    autoencoder_savepath='/root/softlearning/data/autoencoder_models/sawyer_pusher_texture/ae_better.pwf')
+            env=SawyerPushXYMultiEnv(
+                task_id=40, 
+                hide_goal=True,
+                texture=True,
+                pos_noise=0.0,
+                randomize_gripper=False,
+                forward_only=False,
+                ),
+            autoencoder_model=AE(),
+            autoencoder_savepath='/root/softlearning/data/'
+            'autoencoder_models/sawyer_pusher_texture/ae_better.pwf'
+            )
         replay_pool = self.replay_pool = (
             get_replay_pool_from_variant(variant, env))
         sampler = self.sampler = get_sampler_from_variant(variant)
@@ -64,7 +66,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             'session': self._session,
         }
 
-        if self._variant['algorithm_params']['type'] in ['SACClassifier', 'RAQ']:
+        if self._variant['algorithm_params']['type'] in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
             reward_classifier = get_reward_classifier_from_variant(self._variant, env)
             algorithm_kwargs['classifier'] = reward_classifier
 
@@ -75,20 +77,6 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             algorithm_kwargs['goal_examples'] = goal_examples
 
         self.algorithm = get_algorithm_from_variant(**algorithm_kwargs)
-
-
-        # self.algorithm = get_algorithm_from_variant(
-        #     variant=self._variant,
-        #     env=self.env,
-        #     policy=policy,
-        #     initial_exploration_policy=initial_exploration_policy,
-        #     Qs=Qs,
-        #     pool=replay_pool,
-        #     sampler=sampler,
-        #     session=self._session,
-        #     #classifier=classifier,
-        #     )
-
 
         initialize_tf_variables(self._session, only_uninitialized=True)
 

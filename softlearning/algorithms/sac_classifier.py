@@ -68,21 +68,7 @@ class SACClassifier(SAC):
 
         return Q_target
 
-    def _init_classifier_update(self):
-        #TODO Avi modify this to match whatever we do in VICE
-        logits = self._classifier([self._observations_ph])
-        #logits = tf.expand_dims(logits, axis=-1)
-        # self._discriminator_t = tf.squeeze(tf.nn.sigmoid(logits), axis=-1)
-        #self._discriminator_t = tf.nn.sigmoid(logits)
-
-        #classifier_logprob = -1*tf.nn.relu(energy)
-        #classifier_logprob = -10*tf.nn.sigmoid(classifier_output_linear)
-        
-        cross_entropy_t = tf.nn.sigmoid_cross_entropy_with_logits(
-            logits=logits, labels=self._label_ph)
-        self._classifier_loss_t = tf.reduce_mean(cross_entropy_t)
-        #self._reward_t = self._discriminator_t
-
+    def _get_classifier_training_op(self):
         if self._classifier_optim_name == 'adam':
             opt_func = tf.train.AdamOptimizer
         elif self._classifier_optim_name == 'sgd':
@@ -90,22 +76,32 @@ class SACClassifier(SAC):
         else:
             raise NotImplementedError
 
-        self._classifier_optimizer = opt_func(
-                            learning_rate=self._classifier_lr,
-                            name='classifier_optimizer')
+        classifier_optimizer = opt_func(
+            learning_rate=self._classifier_lr,
+            name='classifier_optimizer')
 
-        self._classifier_training_op = \
+        classifier_training_op = \
             tf.contrib.layers.optimize_loss(
                 self._classifier_loss_t,
                 self.global_step,
                 learning_rate=self._classifier_lr,
-                optimizer=self._classifier_optimizer,
+                optimizer=classifier_optimizer,
                 variables=self._classifier.trainable_variables,
                 increment_global_step=False,
                 summaries=((
                     "loss", "gradients", "gradient_norm", "global_gradient_norm"
                 ) if self._tf_summaries else ())
                 )
+
+        return classifier_training_op
+
+    def _init_classifier_update(self):
+        logits = self._classifier([self._observations_ph])
+        self._classifier_loss_t = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(
+                logits=logits, labels=self._label_ph))
+        self._classifier_training_op = self._get_classifier_training_op()
+
 
     def _get_classifier_feed_dict(self):
 
@@ -129,9 +125,10 @@ class SACClassifier(SAC):
         return loss
 
     def _epoch_after_hook(self, *args, **kwargs):
-        for i in range(self._n_classifier_train_steps_update):
-            feed_dict = self._get_classifier_feed_dict()
-            self._train_classifier_step(feed_dict)
+        if self._epoch == 0:
+            for i in range(self._n_classifier_train_steps_init):
+                feed_dict = self._get_classifier_feed_dict()
+                self._train_classifier_step(feed_dict)
 
     def get_diagnostics(self,
                         iteration,

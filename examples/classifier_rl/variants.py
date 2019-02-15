@@ -85,7 +85,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
             'n_classifier_train_steps_init': int(1e4),
-            'n_classifier_train_steps_update': int(1e4),
+            'n_classifier_train_steps_update': int(1e3),
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'sgd',
             'reward_type': 'logits',
@@ -106,14 +106,53 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
             'n_classifier_train_steps_init': int(1e4),
-            'n_classifier_train_steps_update': int(1e4),
+            'n_classifier_train_steps_update': int(1e3),
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'sgd',
             'reward_type': 'logits',
             'n_epochs': 300,
         }
     },
-
+    'VICE': {
+        'type': 'VICE',
+        'kwargs': {
+            'reparameterize': REPARAMETERIZE,
+            'lr': 3e-4,
+            'target_update_interval': 1,
+            'tau': 5e-3,
+            'target_entropy': 'auto',
+            'store_extra_policy_info': False,
+            'action_prior': 'uniform',
+            'classifier_lr': 1e-4,
+            'classifier_batch_size': 128,
+            'n_initial_exploration_steps': int(1e3),
+            'n_classifier_train_steps_init': int(1e4),
+            'n_classifier_train_steps_update': int(1e3),
+            # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
+            'classifier_optim_name': 'sgd',
+            'n_epochs': 300,
+        }
+    },
+    'VICERAQ': {
+        'type': 'VICERAQ',
+        'kwargs': {
+            'reparameterize': REPARAMETERIZE,
+            'lr': 3e-4,
+            'target_update_interval': 1,
+            'tau': 5e-3,
+            'target_entropy': 'auto',
+            'store_extra_policy_info': False,
+            'action_prior': 'uniform',
+            'classifier_lr': 1e-4,
+            'classifier_batch_size': 128,
+            'n_initial_exploration_steps': int(1e3),
+            'n_classifier_train_steps_init': int(1e4),
+            'n_classifier_train_steps_update': int(1e3),
+            # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
+            'classifier_optim_name': 'sgd',
+            'n_epochs': 300,
+        }
+    },
     'SQL': {
         'type': 'SQL',
         'kwargs': {
@@ -299,16 +338,16 @@ def get_variant_spec_classifier(universe,
                                 **kwargs):
     variant_spec = get_variant_spec_base(
         universe, domain, task, policy, algorithm, *args, **kwargs)
-    
+
     classifier_layer_size = L = 256
     variant_spec['classifier_params'] = {
-            'type': 'feedforward_classifier',
-            'kwargs': {
-                'hidden_layer_sizes': (L,L),
+        'type': 'feedforward_classifier',
+        'kwargs': {
+            'hidden_layer_sizes': (L,L),
             }
         }
 
-    if algorithm in ['RAQ']:
+    if algorithm in ['RAQ', 'VICERAQ']:
         variant_spec.update({
 
             'sampler_params': {
@@ -373,7 +412,7 @@ def get_variant_spec(args):
     #     variant_spec = get_variant_spec_image(
     #         universe, domain, task, args.policy, args.algorithm)
     # else:
-    if args.algorithm in ['SACClassifier', 'RAQ']:
+    if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
         variant_spec = get_variant_spec_classifier(
             universe, domain, task, args.policy, args.algorithm)
     else:

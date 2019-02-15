@@ -169,7 +169,8 @@ def add_ray_tune_args(parser):
     parser.add_argument(
         '--trial-name-template',
         type=str,
-        default=None,
+        default='{trial.trial_id}-algorithm={trial.config[algorithm_params]'
+                '[type]}-seed={trial.config[run_params][seed]}',
         help=tune_help_string(
             "Optional string template for trial name. For example:"
             " '{trial.trial_id}-seed={trial.config[run_params][seed]}'"))
@@ -272,6 +273,12 @@ def get_parser(allow_policy_list=False):
         const=True,
         default=True,
         help="Whether or not to query yes/no on remote run.")
+
+    parser.add_argument(
+        '--video-save-frequency',
+        type=int,
+        default=5,
+        help="Save frequency for videos.")
 
     parser = add_ray_init_args(parser)
     parser = add_ray_tune_args(parser)
