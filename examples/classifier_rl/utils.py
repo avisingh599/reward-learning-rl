@@ -228,6 +228,11 @@ def get_parser(allow_policy_list=False):
     parser.add_argument(
         '--domain', type=str, default=None)
     parser.add_argument(
+        '--perception', type=str, default='autoencoder', 
+        choices=('autoencoder', 'full_state'))
+    parser.add_argument(
+        '--texture', type=bool, default=False)
+    parser.add_argument(
         '--task', type=str, default=DEFAULT_TASK)
 
     parser.add_argument(
@@ -279,6 +284,11 @@ def get_parser(allow_policy_list=False):
         type=int,
         default=5,
         help="Save frequency for videos.")
+    parser.add_argument(
+        '--path-save-frequency',
+        type=int,
+        default=1,
+        help="Save frequency for paths.")
 
     parser = add_ray_init_args(parser)
     parser = add_ray_tune_args(parser)

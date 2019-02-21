@@ -38,7 +38,8 @@ class VICE(SACClassifier):
 
     def _init_classifier_udpate(self):
         log_p = self._classifier([self._observations_ph])
-        log_pi = self._policy.log_pis([self._observations_ph], self._actions_ph)
+        sampled_actions = self._policy.actions([self._observations_ph])
+        log_pi = self._policy.log_pis([self._observations_ph], sampled_actions)
         log_pi_log_p_concat = tf.concat(
             [tf.expand_dims(log_pi, 1), tf.expand_dims(log_p, 1)], axis=1)
         label_onehot = tf.one_hot(tf.cast(self._label_ph, tf.int32), 2, dtype=tf.int32)
@@ -51,11 +52,6 @@ class VICE(SACClassifier):
         self._classifier_training_op = self._get_classifier_training_op()
 
     def _epoch_after_hook(self, *args, **kwargs):
-        if self._epoch == 0:
-            n_train_steps = self._n_classifier_train_steps_init
-        else:
-            n_train_steps = self._n_classifier_train_steps_update
-
-        for i in range(n_train_steps):
+        for i in range(self._n_classifier_train_steps):
             feed_dict = self._get_classifier_feed_dict()
             self._train_classifier_step(feed_dict)

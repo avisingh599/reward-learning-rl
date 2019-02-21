@@ -23,7 +23,7 @@ from softlearning.environments.adapters.gym_adapter import GymAdapter,\
     GymAdapterAutoEncoder
 from gym.envs.mujoco.multitask.sawyer_pusher_multienv import \
     SawyerPushXYMultiEnv
-from softlearning.autoencoder.autoencoder import AE
+from softlearning.autoencoder.autoencoder import AE, VAE
 
 class ExperimentRunnerClassifierRL(ExperimentRunner):
 
@@ -34,19 +34,45 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         #env = self.env = GymAdapter(env=SawyerPushXYEnv())
         #'/root/sac-plus/experiments/autoencoder/sawyer_pusher_texture/ae.pwf',
 
-        env = self.env = GymAdapterAutoEncoder(
-            env=SawyerPushXYMultiEnv(
-                task_id=40, 
-                hide_goal=True,
-                texture=True,
-                pos_noise=0.0,
-                randomize_gripper=False,
-                forward_only=False,
-                ),
-            autoencoder_model=AE(),
-            autoencoder_savepath='/root/softlearning/data/'
-            'autoencoder_models/sawyer_pusher_texture/ae_better.pwf'
-            )
+        #TODO Avi Implement a new version of get_env_from_variant
+        if variant['perception'] == 'autoencoder':
+            if variant['texture']:
+                hide_goal = True
+                ae_path = '/root/softlearning/data/' \
+                + 'autoencoder_models/sawyer_pusher_texture/ae_better.pwf'
+                ae_model = AE()
+            else:
+                hide_goal = False
+                ae_path = '/root/softlearning/data/' \
+                + 'autoencoder_models/sawyer_pusher_no_texture/vae.pwf'
+                ae_model = VAE(num_dims=4)
+
+            env = self.env = GymAdapterAutoEncoder(
+                env=SawyerPushXYMultiEnv(
+                    task_id=40, 
+                    hide_goal=hide_goal,
+                    texture=variant['texture'],
+                    pos_noise=0.01,
+                    randomize_gripper=False,
+                    forward_only=False,
+                    ),
+                autoencoder_model=ae_model,
+                autoencoder_savepath=ae_path,
+                )
+        elif variant['perception'] == 'full_state':
+            env = self.env = GymAdapter(
+                env=SawyerPushXYMultiEnv(
+                    task_id=40, 
+                    hide_goal=True,
+                    texture=True,
+                    pos_noise=0.01,
+                    randomize_gripper=False,
+                    forward_only=False,
+                    ),
+                )
+        else:
+            raise NotImplementedError
+
         replay_pool = self.replay_pool = (
             get_replay_pool_from_variant(variant, env))
         sampler = self.sampler = get_sampler_from_variant(variant)
@@ -67,20 +93,46 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         }
 
         if self._variant['algorithm_params']['type'] in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
-            reward_classifier = get_reward_classifier_from_variant(self._variant, env)
+            reward_classifier = self.reward_classifier \
+                = get_reward_classifier_from_variant(self._variant, env)
             algorithm_kwargs['classifier'] = reward_classifier
 
-            goal_images = env._env.env.get_expert_images()
-            goal_aefeatures = env.feature_points(goal_images)
-            goal_examples = goal_aefeatures
+            #TODO Avi maybe write a "get_data_from_variant"
+            if self._variant['perception'] == 'autoencoder':
+                goal_images = env._env.env.get_expert_images()
+                goal_aefeatures = env.feature_points(goal_images)
+                goal_examples = goal_aefeatures
+            elif self._variant['perception'] == 'full_state':
+                goal_examples = env._env.env.get_expert_fullstates()
+            else:
+                raise NotImplementedError
 
-            algorithm_kwargs['goal_examples'] = goal_examples
+            n_goal_examples = self._variant['data_params']['n_goal_examples']
+            assert goal_examples.shape[0] >= n_goal_examples
+
+            n_goal_examples_validation_max = self._variant['data_params']['n_'
+                        'goal_examples_validation_max']
+            algorithm_kwargs['goal_examples'] = goal_examples[:n_goal_examples]
+            algorithm_kwargs['goal_examples_validation'] = \
+                goal_examples[n_goal_examples:n_goal_examples_validation_max+n_goal_examples]
 
         self.algorithm = get_algorithm_from_variant(**algorithm_kwargs)
 
         initialize_tf_variables(self._session, only_uninitialized=True)
 
         self._built = True
+
+    @property
+    def picklables(self):
+        return {
+            'variant': self._variant,
+            'env': self.env,
+            'sampler': self.sampler,
+            'algorithm': self.algorithm,
+            'Qs': self.Qs,
+            'classifier': self.reward_classifier,
+            'policy_weights': self.policy.get_weights(),
+        }
 
 
 def main(argv=None):

@@ -33,6 +33,7 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
             eval_deterministic=True,
             eval_render_mode=None,
             video_save_frequency=0,
+            path_save_frequency=0,
             session=None,
     ):
         """
@@ -63,6 +64,7 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
         self._eval_n_episodes = eval_n_episodes
         self._eval_deterministic = eval_deterministic
         self._video_save_frequency = video_save_frequency
+        self._path_save_frequency = path_save_frequency
 
         if self._video_save_frequency > 0:
             assert eval_render_mode != 'human', (
@@ -186,8 +188,25 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
             evaluation_paths = self._evaluation_paths(policy, evaluation_env)
             gt.stamp('evaluation_paths')
 
+
             training_metrics = self._evaluate_rollouts(training_paths, env)
             gt.stamp('training_metrics')
+            
+            should_save_path = (
+                self._path_save_frequency > 0
+                and self._epoch % self._path_save_frequency == 0)
+            if should_save_path:
+                import pickle
+                for i, path in enumerate(training_paths):
+                    #path.pop('images')
+                    path_file_name = f'training_path_{self._epoch}_{i}.pkl'
+                    path_file_path = os.path.join(
+                        os.getcwd(), 'paths', path_file_name)
+                    if not os.path.exists(os.path.dirname(path_file_path)):
+                        os.makedirs(os.path.dirname(path_file_path))
+                    with open(path_file_path, 'wb' ) as f:
+                        pickle.dump(path, f)
+
             if evaluation_paths:
                 evaluation_metrics = self._evaluate_rollouts(
                     evaluation_paths, evaluation_env)

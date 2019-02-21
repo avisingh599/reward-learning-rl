@@ -71,11 +71,8 @@ class RAQ(SACClassifier):
         #train/re-train the classifier
         if self._epoch == 0:
             self._add_randomly_collected_negatives()
-            n_train_steps = self._n_classifier_train_steps_init
-        else:
-            n_train_steps = self._n_classifier_train_steps_update
 
-        for i in range(n_train_steps):
+        for i in range(self._n_classifier_train_steps):
             feed_dict = self._get_classifier_feed_dict()
             self._train_classifier_step(feed_dict)
         

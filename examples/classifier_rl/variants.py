@@ -56,7 +56,8 @@ ALGORITHM_PARAMS_BASE = {
     }
 }
 
-
+#TODO Avi Most of the algorithm params for classifier-style methods
+#are shared. Rewrite this part to reuse the params
 ALGORITHM_PARAMS_ADDITIONAL = {
     'SAC': {
         'type': 'SAC',
@@ -84,10 +85,10 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_lr': 1e-4,
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
-            'n_classifier_train_steps_init': int(1e4),
-            'n_classifier_train_steps_update': int(1e3),
+            'n_classifier_train_steps': 10000,
+            #'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
-            'classifier_optim_name': 'sgd',
+            'classifier_optim_name': 'adam',
             'reward_type': 'logits',
             'n_epochs': 300,
         }
@@ -100,15 +101,16 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'target_update_interval': 1,
             'tau': 5e-3,
             'target_entropy': 'auto',
+            #'target_entropy': tune.grid_search([-10, -7, -5, -2, 0, 5]),
             'store_extra_policy_info': False,
             'action_prior': 'uniform',
             'classifier_lr': 1e-4,
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
-            'n_classifier_train_steps_init': int(1e4),
-            'n_classifier_train_steps_update': int(1e3),
+            'n_classifier_train_steps': 100,
+            #'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
-            'classifier_optim_name': 'sgd',
+            'classifier_optim_name': 'adam',
             'reward_type': 'logits',
             'n_epochs': 300,
         }
@@ -126,10 +128,10 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_lr': 1e-4,
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
-            'n_classifier_train_steps_init': int(1e4),
-            'n_classifier_train_steps_update': int(1e3),
+            'n_classifier_train_steps': 100,
+            #'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
-            'classifier_optim_name': 'sgd',
+            'classifier_optim_name': 'adam',
             'n_epochs': 300,
         }
     },
@@ -146,10 +148,10 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_lr': 1e-4,
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
-            'n_classifier_train_steps_init': int(1e4),
-            'n_classifier_train_steps_update': int(1e3),
+            'n_classifier_train_steps': 100,
+            # 'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
-            'classifier_optim_name': 'sgd',
+            'classifier_optim_name': 'adam',
             'n_epochs': 300,
         }
     },
@@ -347,6 +349,11 @@ def get_variant_spec_classifier(universe,
             }
         }
 
+    variant_spec['data_params'] = {
+        'n_goal_examples': 200,
+        'n_goal_examples_validation_max': 100,
+    }
+
     if algorithm in ['RAQ', 'VICERAQ']:
         variant_spec.update({
 
@@ -404,7 +411,7 @@ def get_variant_spec_classifier(universe,
 
 
 def get_variant_spec(args):
-    universe, domain, task, algorithm = args.universe, args.domain, args.task, args.algorithm
+    universe, domain, task, algorithm, perception = args.universe, args.domain, args.task, args.algorithm, args.perception
 
     # if ('image' in task.lower()
     #     or 'blind' in task.lower()
@@ -418,6 +425,9 @@ def get_variant_spec(args):
     else:
         variant_spec = get_variant_spec_base(
             universe, domain, task, args.policy, args.algorithm)
+
+    variant_spec['perception'] = args.perception
+    variant_spec['texture'] = args.texture
 
     if args.checkpoint_replay_pool is not None:
         variant_spec['run_params']['checkpoint_replay_pool'] = (

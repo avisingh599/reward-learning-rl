@@ -9,21 +9,21 @@ class SACClassifier(SAC):
             self,
             classifier,
             goal_examples,
+            goal_examples_validation,
             classifier_lr=1e-4,
             classifier_batch_size=128,
             reward_type = 'logits',
-            n_classifier_train_steps_init=int(1e4),
-            n_classifier_train_steps_update=int(1e3),
+            n_classifier_train_steps=int(1e4),
             classifier_optim_name='adam',
             **kwargs,
     ):
         
         self._classifier = classifier
         self._goal_examples = goal_examples
+        self._goal_examples_validation = goal_examples_validation
         self._classifier_lr = classifier_lr
         self._reward_type = reward_type
-        self._n_classifier_train_steps_init = n_classifier_train_steps_init
-        self._n_classifier_train_steps_update = n_classifier_train_steps_update
+        self._n_classifier_train_steps = n_classifier_train_steps
         self._classifier_optim_name = classifier_optim_name
         self._classifier_batch_size = classifier_batch_size
 
@@ -76,7 +76,7 @@ class SACClassifier(SAC):
         else:
             raise NotImplementedError
 
-        classifier_optimizer = opt_func(
+        self._classifier_optimizer = opt_func(
             learning_rate=self._classifier_lr,
             name='classifier_optimizer')
 
@@ -85,7 +85,7 @@ class SACClassifier(SAC):
                 self._classifier_loss_t,
                 self.global_step,
                 learning_rate=self._classifier_lr,
-                optimizer=classifier_optimizer,
+                optimizer=self._classifier_optimizer,
                 variables=self._classifier.trainable_variables,
                 increment_global_step=False,
                 summaries=((
@@ -125,8 +125,9 @@ class SACClassifier(SAC):
         return loss
 
     def _epoch_after_hook(self, *args, **kwargs):
+        #import IPython; IPython.embed()
         if self._epoch == 0:
-            for i in range(self._n_classifier_train_steps_init):
+            for i in range(self._n_classifier_train_steps):
                 feed_dict = self._get_classifier_feed_dict()
                 self._train_classifier_step(feed_dict)
 
@@ -137,14 +138,21 @@ class SACClassifier(SAC):
                         evaluation_paths):
         diagnostics = super(SACClassifier, self).get_diagnostics(
             iteration, batch, training_paths, evaluation_paths)
-        
+
         sample_observations = batch['observations']
         goal_index = np.random.randint(self._goal_examples.shape[0],
                                        size=sample_observations.shape[0])
         goal_observations = self._goal_examples[goal_index]
+        
+        goal_index_validation = np.random.randint(
+            self._goal_examples_validation.shape[0],
+            size=sample_observations.shape[0])
+        goal_observations_validation = \
+            self._goal_examples_validation[goal_index_validation]
 
         sample_goal_observations = np.concatenate(
-            (sample_observations, goal_observations), axis=0)
+            (sample_observations, goal_observations, goal_observations_validation),
+            axis=0)
 
         reward_sample_goal_observations, classifier_loss = self._session.run(
             [self._reward_t, self._classifier_loss_t],
@@ -152,21 +160,76 @@ class SACClassifier(SAC):
                        self._label_ph: np.concatenate([
                                     np.zeros((sample_observations.shape[0],1)),
                                     np.ones((goal_observations.shape[0],1)),
+                                    np.ones((goal_observations_validation.shape[0],1)),
                                     ])
                         }
             )
 
-        reward_sample_observations, reward_goal_observations = np.split(
+        reward_sample_observations, reward_goal_observations, \
+        reward_goal_observations_validation = np.split(
             reward_sample_goal_observations,
-            (sample_observations.shape[0],),
+            (sample_observations.shape[0],
+             sample_observations.shape[0]+goal_observations.shape[0]
+            ),
             axis=0)
+        
+        #TODO Avi fix this so that classifier loss is split into train and val
+        #currently the classifier loss printed is the mean
+        # classifier_loss_train, classifier_loss_validation = np.split(
+        #     classifier_loss,
+        #     (sample_observations.shape[0]+goal_observations.shape[0],),
+        #     axis=0)
 
         diagnostics.update({
-            'reward_learning/classifier_loss': np.mean(classifier_loss),
+            #'reward_learning/classifier_loss_train': np.mean(classifier_loss_train),
+            #'reward_learning/classifier_loss_validation': np.mean(classifier_loss_validation),
+            'reward_learning/classifier_loss': classifier_loss,
             'reward_learning/reward_sample_obs_mean': np.mean(
                 reward_sample_observations),
             'reward_learning/reward_goal_obs_mean': np.mean(
                 reward_goal_observations),
+            'reward_learning/reward_goal_obs_validation_mean': np.mean(
+                reward_goal_observations_validation),
         })
 
         return diagnostics
+
+    def _evaluate_rollouts(self, paths, env):
+        """Compute evaluation metrics for the given rollouts."""
+        diagnostics = super(SACClassifier, self)._evaluate_rollouts(paths, env)
+        
+        observations = [path['observations'] for path in paths]
+        observations = np.concatenate(observations)
+        learned_reward = self._session.run(self._reward_t,
+            feed_dict={self._observations_ph: observations})
+
+        diagnostics[f'reward_learning/reward-mean'] = np.mean(learned_reward)
+        diagnostics[f'reward_learning/reward-min'] = np.min(learned_reward)
+        diagnostics[f'reward_learning/reward-max'] = np.max(learned_reward)
+        diagnostics[f'reward_learning/reward-std'] = np.std(learned_reward)
+
+        return diagnostics
+
+    @property
+    def tf_saveables(self):
+        #TODO Avi Figure out why the code below does not work
+
+        # saveables = super(SACClassifier, self).tf_saveables()
+        # saveables.update({
+        #     '_classifier_optimizer': self._classifier_optimizer
+        # })
+
+        saveables = {
+            '_policy_optimizer': self._policy_optimizer,
+            **{
+                f'Q_optimizer_{i}': optimizer
+                for i, optimizer in enumerate(self._Q_optimizers)
+            },
+            '_log_alpha': self._log_alpha,
+            '_classifier_optimizer': self._classifier_optimizer,
+        }
+
+        if hasattr(self, '_alpha_optimizer'):
+            saveables['_alpha_optimizer'] = self._alpha_optimizer
+
+        return saveables

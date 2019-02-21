@@ -165,6 +165,34 @@ class GymAdapter(SoftlearningEnv):
     def set_param_values(self, *args, **kwargs):
         raise NotImplementedError
 
+class GymAdapterPixel(GymAdapter):
+
+    def __init__(self, *args, **kwargs):
+        self._Serializable__initialize(locals())
+        super(GymAdapterPixel, self).__init__(*args, **kwargs)
+        img_dims = (self._env.env.camera_height, self._env.env.camera_width, self._env.env.camera_channels)
+
+        self._observation_space = spaces.Box(
+            low=-np.inf, high=np.inf, shape=[np.prod(img_dims)],
+        )
+
+    def reset(self):
+        self._env.reset()
+        return self._get_obs()
+
+    def step(self, action, *args, **kwargs):
+        _obs, reward, done, env_infos = self._env.step(action, *args, **kwargs)
+        obs = self._get_obs()
+        return obs, reward, done, env_infos
+
+    def _get_obs(self):
+        image = self._env.env.get_image()
+        return image.flatten()
+
+    @property
+    def observation_space(self):
+        return self._observation_space
+
 class GymAdapterAutoEncoder(GymAdapter):
 
     def __init__(self,

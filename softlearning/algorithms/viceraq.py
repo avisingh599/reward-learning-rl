@@ -14,11 +14,7 @@ class VICERAQ(VICE):
         self._last_active_query_idx = 0
 
     def _epoch_after_hook(self, *args, **kwargs):
-        if self._epoch == 0:
-            n_train_steps = self._n_classifier_train_steps_init
-        else:
-            n_train_steps = self._n_classifier_train_steps_update
-        
+
         #TODO Avi this code is repeated from RAQ
         #figure out some clean way to reuse it
         observations_of_interest = self._pool.fields['observations'][
@@ -30,6 +26,7 @@ class VICERAQ(VICE):
         rewards_of_interest = self._session.run(self._reward_t, feed_dict={
                                     self._observations_ph: observations_of_interest})
 
+        #TODO Avi maybe log this quantity
         max_ind = np.argmax(rewards_of_interest)
 
         if labels_of_interest[max_ind]:
@@ -45,7 +42,7 @@ class VICERAQ(VICE):
         #             np.expand_dims(observations_of_interest[max_ind], axis=0) 
         #             ])
 
-        for i in range(n_train_steps):
+        for i in range(self._n_classifier_train_steps):
             feed_dict = self._get_classifier_feed_dict()
             self._train_classifier_step(feed_dict)
 
