@@ -12,6 +12,8 @@ from softlearning.environments.gym import register_environments
 from softlearning.environments.gym.wrappers import NormalizeActionWrapper
 from collections import defaultdict
 
+import tensorflow as tf
+from softlearning.utils.keras import PicklableKerasModel
 
 def parse_domain_task(gym_id):
     domain_task_parts = gym_id.split('-')
@@ -192,6 +194,85 @@ class GymAdapterPixel(GymAdapter):
     @property
     def observation_space(self):
         return self._observation_space
+
+class GymAdapterAutoEncoderTF(GymAdapter):
+    def __init__(self,
+                 autoencoder_model,
+                 autoencoder_savepath,
+                 *args,
+                 domain=None,
+                 task=None,
+                 env=None,
+                 use_jointstate=False,
+                 normalize=True,
+                 observation_keys=None,
+                 unwrap_time_limit=True,
+                 **kwargs
+                 ):
+        #super(GymAdapterAutoEncoderTF, self).__init__(**kwargs)
+        self._Serializable__initialize(locals())
+        super(GymAdapterAutoEncoderTF, self).__init__(
+                                    *args,
+                                    domain=domain, task=task, env=env,
+                                    normalize=normalize,
+                                    observation_keys=observation_keys,
+                                    unwrap_time_limit=unwrap_time_limit,
+                                    **kwargs)
+
+        self._autoencoder_full_model = autoencoder_model
+        self._use_jointstate = use_jointstate
+        self._autoencoder_full_model.load_weights(autoencoder_savepath)
+        self._autoencoder = PicklableKerasModel(
+            inputs=self._autoencoder_full_model.inputs,
+            outputs=self._autoencoder_full_model.outputs[0])
+
+        self._feature_dim = self._autoencoder.outputs[0].shape[1].value
+
+        if self._use_jointstate:
+            self._joint_dim = self._env.env.joing_space.flat_dim
+            new_dim = self._joint_dim + self._feature_dim
+        else:
+            new_dim = self._feature_dim
+
+        self._observation_space = spaces.Box(
+            low=-np.inf, high=np.inf, shape=[new_dim],
+            )
+
+    def feature_points(self, image):
+        if len(image.shape) == 4:
+            return self._autoencoder.predict(image)
+        elif len(image.shape) == 3:
+            return self._autoencoder.predict(
+                np.expand_dims(image, axis=0))[0]
+        else:
+            raise NotImplementedError
+
+    def step(self, action, *args, **kwargs):
+        _obs, reward, done, env_infos = self._env.step(action, *args, **kwargs)
+        obs = self._get_obs()
+        return obs, reward, done, env_infos
+
+    def reset(self):
+        self._env.reset()
+        return self._get_obs()
+
+    def _get_obs(self):
+        image = self._env.env.get_image()
+        fp = self.feature_points(image)
+
+        if self._use_jointstate:
+            joint_obs = self._env.env._get_jointstate()
+            return np.concatenate([fp, joint_obs])
+        else:
+            return fp
+
+    @property
+    def observation_space(self):
+        return self._observation_space
+
+    @property
+    def joint_space(self):
+        return self._joint_space
 
 class GymAdapterAutoEncoder(GymAdapter):
 

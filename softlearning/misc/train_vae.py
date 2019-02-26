@@ -29,6 +29,16 @@ def main():
             image = imageio.imread(image_path)
             image = image.astype(np.float32) / 255.
             images.append(image)
+
+    data_directory_experts = '/root/gym-larry/gym/envs/mujoco/assets/sawyer_pusher_data/'
+    'expert_images_randomize_gripper_False_pos_noise_0.01_texture_False/task40/'
+    for fname in sorted(os.listdir(data_directory_experts)):
+        if fname.endswith('.png'):
+            image_path = os.path.join(data_directory_experts, fname)
+            image = imageio.imread(image_path)
+            image = image.astype(np.float32) / 255.
+            images.append(image)
+    
     images = np.asarray(images)
 
     save_path = osp.join(save_directory, '{}.pwf'.format(AUTOENCODER_TYPE))

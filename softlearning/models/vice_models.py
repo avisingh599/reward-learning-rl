@@ -1,5 +1,5 @@
+import tensorflow as tf
 from softlearning.models.feedforward import feedforward_model
-
 
 def create_feedforward_reward_classifier(observation_shape,
                                   *args,
@@ -13,4 +13,5 @@ def create_feedforward_reward_classifier(observation_shape,
         *args,
         output_size=1,
         preprocessors=preprocessors,
+        kernel_regularizer=tf.keras.regularizers.l2(0.001),
         **kwargs)

@@ -20,10 +20,11 @@ from examples.instrument import run_example_local
 from examples.development.main import ExperimentRunner
 
 from softlearning.environments.adapters.gym_adapter import GymAdapter,\
-    GymAdapterAutoEncoder
+    GymAdapterAutoEncoder, GymAdapterAutoEncoderTF
 from gym.envs.mujoco.multitask.sawyer_pusher_multienv import \
     SawyerPushXYMultiEnv
 from softlearning.autoencoder.autoencoder import AE, VAE
+from softlearning.models.autoencoder_models import spatialAE
 
 class ExperimentRunnerClassifierRL(ExperimentRunner):
 
@@ -44,10 +45,14 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             else:
                 hide_goal = False
                 ae_path = '/root/softlearning/data/' \
-                + 'autoencoder_models/sawyer_pusher_no_texture/vae.pwf'
-                ae_model = VAE(num_dims=4)
+                + 'autoencoder_models_tf/spatial_ae.h5'
+                latent_dim = 32
+                ae_model = spatialAE(latent_dim)
 
-            env = self.env = GymAdapterAutoEncoder(
+            #import IPython; IPython.embed()
+            env = self.env = GymAdapterAutoEncoderTF(
+                autoencoder_model=ae_model,
+                autoencoder_savepath=ae_path,
                 env=SawyerPushXYMultiEnv(
                     task_id=40, 
                     hide_goal=hide_goal,
@@ -56,8 +61,6 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
                     randomize_gripper=False,
                     forward_only=False,
                     ),
-                autoencoder_model=ae_model,
-                autoencoder_savepath=ae_path,
                 )
         elif variant['perception'] == 'full_state':
             env = self.env = GymAdapter(

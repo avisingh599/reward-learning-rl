@@ -35,7 +35,9 @@ class AutoencoderTrainer(object):
     @staticmethod
     def split_dataset(dataset, train_fraction=0.9):
         n_train = int(len(dataset) * train_fraction)
-        return dataset[:n_train], dataset[n_train:]
+        indices = np.random.permutation(len(dataset))
+        training_idx, test_idx = indices[:n_train], indices[n_train:]
+        return dataset[training_idx,:], dataset[test_idx,:]
 
     def _get_batch(self, batch_size, training=True):
         dataset = self.train_dataset if training else self.test_dataset
