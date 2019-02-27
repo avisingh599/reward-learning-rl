@@ -38,18 +38,21 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         #TODO Avi Implement a new version of get_env_from_variant
         if variant['perception'] == 'autoencoder':
             if variant['texture']:
-                raise NotImplementedError
-                # hide_goal = True
-                # ae_path = '/root/softlearning/data/' \
-                # + 'autoencoder_models/sawyer_pusher_texture/ae_better.pwf'
-                # ae_model = AE()
+                # raise NotImplementedError
+                hide_goal = True
+                #ae_path = '/root/ray_results/autoencoder_models_tf/'\
+                #+'2019-02-27_03-39-47_num_expert_images-10_env_type-sawyer_pusher_texture/spatial_ae.h5'
+                ae_path = '/root/ray_results/autoencoder_models_tf/2019-02-27_03-42-27_num_expert_images-200_env_type-sawyer_pusher_texture/spatial_ae.h5'
             else:
                 hide_goal = False
-                ae_path = '/root/softlearning/data/' \
-                + 'autoencoder_models_tf/2019-02-26_03-08-15/spatial_ae.h5'
-                latent_dim = 32
-                ae_model = spatialAE(latent_dim)
+                #ae_path = '/root/softlearning/data/' \
+                #+ 'autoencoder_models_tf/2019-02-26_03-08-15/spatial_ae.h5'
+                ae_path = '/root/ray_results/autoencoder_models_tf/'\
+                +'2019-02-27_00-50-03_num_expert_images-10_'\
+                +'env_type-sawyer_pusher_no_texture/spatial_ae.h5'
 
+            latent_dim = 32
+            ae_model = spatialAE(latent_dim)
             #import IPython; IPython.embed()
             env = self.env = GymAdapterAutoEncoderTF(
                 autoencoder_model=ae_model,

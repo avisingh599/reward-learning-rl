@@ -15,16 +15,16 @@ from softlearning.environments.adapters.gym_adapter import GymAdapterPixel
 
 NUM_TRAJECTORIES = 100
 MAX_PATH_LENGTH = 150
-# ENV_NAME = 'sawyer_pusher_texture'
-ENV_NAME = 'sawyer_pusher_no_texture'
+ENV_NAME = 'sawyer_pusher_texture'
+#ENV_NAME = 'sawyer_pusher_no_texture'
 
 import imageio
 
 def main():
     """Collect and save images from a random policy. """
 
-    #env = normalize(SawyerPushXYMultiEnv(40, hide_goal=True, texture=True))
-    env_ = GymAdapterPixel(env=SawyerPushXYMultiEnv(task_id=40, hide_goal=False, texture=False))
+    env_ = GymAdapterPixel(env=SawyerPushXYMultiEnv(task_id=40, hide_goal=True, texture=True))
+    #env_ = GymAdapterPixel(env=SawyerPushXYMultiEnv(task_id=40, hide_goal=False, texture=False))
 
     policy = get_policy('UniformPolicy', env_)
     #print('Collecting trajectories...')
