@@ -219,13 +219,7 @@ class GymAdapterAutoEncoderTF(GymAdapter):
                                     unwrap_time_limit=unwrap_time_limit,
                                     **kwargs)
 
-        self._autoencoder_full_model = autoencoder_model
-        self._use_jointstate = use_jointstate
-        self._autoencoder_full_model.load_weights(autoencoder_savepath)
-        self._autoencoder = PicklableKerasModel(
-            inputs=self._autoencoder_full_model.inputs,
-            outputs=self._autoencoder_full_model.outputs[0])
-
+        self._init_autoencoder()
         self._feature_dim = self._autoencoder.outputs[0].shape[1].value
 
         if self._use_jointstate:
@@ -237,6 +231,14 @@ class GymAdapterAutoEncoderTF(GymAdapter):
         self._observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=[new_dim],
             )
+
+    def _init_autoencoder(self):
+        self._autoencoder_full_model = autoencoder_model
+        self._use_jointstate = use_jointstate
+        self._autoencoder_full_model.load_weights(autoencoder_savepath)
+        self._autoencoder = PicklableKerasModel(
+            inputs=self._autoencoder_full_model.inputs,
+            outputs=self._autoencoder_full_model.outputs[0])
 
     def feature_points(self, image):
         if len(image.shape) == 4:
@@ -274,3 +276,20 @@ class GymAdapterAutoEncoderTF(GymAdapter):
     @property
     def joint_space(self):
         return self._joint_space
+
+    def __getstate__(self):
+        state = {
+            key: value
+            for key, value in self.__dict__.items()
+            if key not in (
+                    '_use_jointstate',
+                    '_autoencoder_full_model',
+                    '_autoencoder',
+            )
+        }
+
+        return state
+
+    def __setstate__(self, state):
+        super(GymAdapterAutoEncoderTF, self).__setstate__(state)
+        self._init_autoencoder()
