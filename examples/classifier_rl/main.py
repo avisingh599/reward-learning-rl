@@ -20,10 +20,10 @@ from examples.instrument import run_example_local
 from examples.development.main import ExperimentRunner
 
 from softlearning.environments.adapters.gym_adapter import GymAdapter,\
-    GymAdapterAutoEncoder, GymAdapterAutoEncoderTF
+    GymAdapterAutoEncoderTF
 from gym.envs.mujoco.multitask.sawyer_pusher_multienv import \
     SawyerPushXYMultiEnv
-from softlearning.autoencoder.autoencoder import AE, VAE
+#from softlearning.autoencoder.autoencoder import AE, VAE
 from softlearning.models.autoencoder_models import spatialAE
 
 class ExperimentRunnerClassifierRL(ExperimentRunner):
@@ -38,14 +38,15 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         #TODO Avi Implement a new version of get_env_from_variant
         if variant['perception'] == 'autoencoder':
             if variant['texture']:
-                hide_goal = True
-                ae_path = '/root/softlearning/data/' \
-                + 'autoencoder_models/sawyer_pusher_texture/ae_better.pwf'
-                ae_model = AE()
+                raise NotImplementedError
+                # hide_goal = True
+                # ae_path = '/root/softlearning/data/' \
+                # + 'autoencoder_models/sawyer_pusher_texture/ae_better.pwf'
+                # ae_model = AE()
             else:
                 hide_goal = False
                 ae_path = '/root/softlearning/data/' \
-                + 'autoencoder_models_tf/spatial_ae.h5'
+                + 'autoencoder_models_tf/2019-02-26_03-08-15/spatial_ae.h5'
                 latent_dim = 32
                 ae_model = spatialAE(latent_dim)
 

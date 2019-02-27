@@ -4,31 +4,36 @@ import tensorflow as tf
 from softlearning.utils.keras import PicklableKerasModel
 
 
-def spatialAE(latent_dim, forward_only=False):
+def spatialAE(latent_dim):
+    """
+    Implements the Deep Spatial AutoEncoder described in Finn et al. (2016)
+    """
     assert latent_dim%2 == 0
     input_image = tf.keras.layers.Input(shape=(84, 84, 3))
 
     conv = tf.keras.layers.Conv2D(
-        filters=32, 
-        kernel_size=5, 
-        strides=(3, 3), 
+        filters=32,
+        kernel_size=5,
+        strides=(3, 3),
         activation=tf.nn.relu)(input_image)
     conv = tf.keras.layers.Conv2D(
-        filters=32, 
-        kernel_size=5, 
-        strides=(3, 3), 
+        filters=32,
+        kernel_size=5,
+        strides=(3, 3),
         activation=tf.nn.relu)(conv)
     conv = tf.keras.layers.Conv2D(
-        filters=int(latent_dim/2), 
-        kernel_size=5, 
-        strides=(3, 3), 
+        filters=int(latent_dim/2),
+        kernel_size=5,
+        strides=(3, 3),
         activation=tf.nn.relu)(conv)
 
     #feature_points = tf.contrib.layers.spatial_softmax(conv, name='spatial_softmax')
     feature_points = spatialSoftMax()(conv)
+    feature_points_dropout = tf.keras.layers.Dropout(0.5)(feature_points)
+
     low_dim = 7 #image dimension of downsampled image
     out = tf.keras.layers.Dense(units=low_dim*low_dim*32,
-        activation=tf.nn.relu)(feature_points)
+        activation=tf.nn.relu)(feature_points_dropout)
     out = tf.keras.layers.Reshape(target_shape=(low_dim, low_dim, 32))(out)
     out = tf.keras.layers.Conv2DTranspose(
         filters=64,
@@ -56,6 +61,9 @@ def spatialAE(latent_dim, forward_only=False):
 
 
 class spatialSoftMax(tf.keras.layers.Layer):
+    """
+    Implements the spatialSoftMax layer from Levine*, Finn* et al. (2016)
+    """
     def __init__(self):
         #self.build()
         #self.shape = self.compute_output_shape(input_shape)
@@ -63,7 +71,7 @@ class spatialSoftMax(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         # self.temperature = self.add_weight(name='spatial_softmax_temperature',
-        #     shape=(1,), initializer='uniform', trainable=True)
+        #     shape=(1,), initializer='ones', trainable=True)
         super(spatialSoftMax, self).build(input_shape)
 
     def call(self, inputs):
@@ -79,9 +87,9 @@ class spatialSoftMax(tf.keras.layers.Layer):
         static_shape = inputs.shape
         height, width, num_channels = shape[1], shape[2], static_shape[3]
         pos_x, pos_y = tf.meshgrid(
-          tf.lin_space(-1., 1., num=height),
-          tf.lin_space(-1., 1., num=width),
-          indexing='ij')
+            tf.lin_space(-1., 1., num=height),
+            tf.lin_space(-1., 1., num=width),
+            indexing='ij')
         pos_x = tf.reshape(pos_x, [height * width])
         pos_y = tf.reshape(pos_y, [height * width])
 

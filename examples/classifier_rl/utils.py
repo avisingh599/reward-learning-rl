@@ -282,7 +282,7 @@ def get_parser(allow_policy_list=False):
     parser.add_argument(
         '--video-save-frequency',
         type=int,
-        default=5,
+        default=0,
         help="Save frequency for videos.")
     parser.add_argument(
         '--path-save-frequency',
