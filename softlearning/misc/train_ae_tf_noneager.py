@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 #from softlearning.autoencoder.autoencoder_tf import VAE, SpatialAE
-from softlearning.models.autoencoder_models import spatialAE
+from softlearning.models.autoencoder_models import spatial_ae
 
 HDD = '/root/softlearning/data/'
 data_directory_experts = { 
@@ -71,7 +71,7 @@ def main():
     images = load_data(args.n_expert_images, args.env_type)
 
     latent_dim = 32
-    model = spatialAE(latent_dim)
+    model = spatial_ae(latent_dim)
     model.compile(optimizer='adam',
         loss={'reconstruction': 'mean_squared_error'})
 
@@ -80,7 +80,7 @@ def main():
 
     checkpointCallBack = tf.keras.callbacks.ModelCheckpoint(
         osp.join(log_dir, 'spatial_ae.h5'), monitor='reconstruction_loss', verbose=1, 
-        save_best_only=True, save_weights_only=True, mode='min')
+        save_best_only=True, save_weights_only=False, mode='min')
     tbCallBack = tf.keras.callbacks.TensorBoard(
         log_dir=log_dir,
         histogram_freq=0, write_graph=True, write_images=True)

@@ -24,38 +24,24 @@ from softlearning.environments.adapters.gym_adapter import GymAdapter,\
 from gym.envs.mujoco.multitask.sawyer_pusher_multienv import \
     SawyerPushXYMultiEnv
 #from softlearning.autoencoder.autoencoder import AE, VAE
-from softlearning.models.autoencoder_models import spatialAE
+#from softlearning.models.autoencoder_models import spatialAE
 
 class ExperimentRunnerClassifierRL(ExperimentRunner):
 
     def _build(self):
         variant = copy.deepcopy(self._variant)
 
-        #env = self.env = get_environment_from_variant(variant)
-        #env = self.env = GymAdapter(env=SawyerPushXYEnv())
-        #'/root/sac-plus/experiments/autoencoder/sawyer_pusher_texture/ae.pwf',
-
         #TODO Avi Implement a new version of get_env_from_variant
         if variant['perception'] == 'autoencoder':
             if variant['texture']:
-                # raise NotImplementedError
                 hide_goal = True
-                #ae_path = '/root/ray_results/autoencoder_models_tf/'\
-                #+'2019-02-27_03-39-47_num_expert_images-10_env_type-sawyer_pusher_texture/spatial_ae.h5'
-                ae_path = '/root/ray_results/autoencoder_models_tf/2019-02-27_03-42-27_num_expert_images-200_env_type-sawyer_pusher_texture/spatial_ae.h5'
+                ae_path = '/root/ray_results/autoencoder_models_tf/2019-02-27_23-14-05_num_expert_images-200_env_type-sawyer_pusher_texture/spatial_ae.h5'
             else:
                 hide_goal = False
-                #ae_path = '/root/softlearning/data/' \
-                #+ 'autoencoder_models_tf/2019-02-26_03-08-15/spatial_ae.h5'
-                ae_path = '/root/ray_results/autoencoder_models_tf/'\
-                +'2019-02-27_00-50-03_num_expert_images-10_'\
-                +'env_type-sawyer_pusher_no_texture/spatial_ae.h5'
+                ae_path = '/root/ray_results/autoencoder_models_tf/2019-02-28_00-48-40_num_expert_images-10_env_type-sawyer_pusher_no_texture/spatial_ae.h5'
 
-            latent_dim = 32
-            ae_model = spatialAE(latent_dim)
-            #import IPython; IPython.embed()
             env = self.env = GymAdapterAutoEncoderTF(
-                autoencoder_model=ae_model,
+                #autoencoder_model=ae_model,
                 autoencoder_savepath=ae_path,
                 env=SawyerPushXYMultiEnv(
                     task_id=40, 
@@ -66,6 +52,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
                     forward_only=False,
                     ),
                 )
+
         elif variant['perception'] == 'full_state':
             env = self.env = GymAdapter(
                 env=SawyerPushXYMultiEnv(
@@ -126,6 +113,84 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         self.algorithm = get_algorithm_from_variant(**algorithm_kwargs)
 
         initialize_tf_variables(self._session, only_uninitialized=True)
+
+        self._built = True
+
+    def _restore(self, checkpoint_dir):
+        assert isinstance(checkpoint_dir, str), checkpoint_dir
+
+        checkpoint_dir = checkpoint_dir.rstrip('/')
+
+        with self._session.as_default():
+            pickle_path = self._pickle_path(checkpoint_dir)
+            with open(pickle_path, 'rb') as f:
+                picklable = pickle.load(f)
+
+        #import IPython; IPython.embed()
+        env = self.env = picklable['env']
+
+        replay_pool = self.replay_pool = (
+            get_replay_pool_from_variant(self._variant, env))
+
+        if self._variant['run_params'].get('checkpoint_replay_pool', False):
+            self._restore_replay_pool(checkpoint_dir)
+
+        sampler = self.sampler = picklable['sampler']
+        Qs = self.Qs = picklable['Qs']
+        # policy = self.policy = picklable['policy']
+        policy = self.policy = (
+            get_policy_from_variant(self._variant, env, Qs))
+        self.policy.set_weights(picklable['policy_weights'])
+        initial_exploration_policy = self.initial_exploration_policy = (
+            get_policy('UniformPolicy', env))
+
+        algorithm_kwargs = {
+            'variant': self._variant,
+            'env': self.env,
+            'policy': policy,
+            'initial_exploration_policy': initial_exploration_policy,
+            'Qs': Qs,
+            'pool': replay_pool,
+            'sampler': sampler,
+            'session': self._session,
+        }
+
+        if self._variant['algorithm_params']['type'] in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
+            reward_classifier = self.reward_classifier = picklable['classifier'] 
+            algorithm_kwargs['classifier'] = reward_classifier
+
+            #TODO Avi maybe write a "get_data_from_variant"
+            if self._variant['perception'] == 'autoencoder':
+                goal_images = env._env.env.get_expert_images()
+                goal_aefeatures = env.feature_points(goal_images)
+                goal_examples = goal_aefeatures
+            elif self._variant['perception'] == 'full_state':
+                goal_examples = env._env.env.get_expert_fullstates()
+            else:
+                raise NotImplementedError
+
+            n_goal_examples = self._variant['data_params']['n_goal_examples']
+            assert goal_examples.shape[0] >= n_goal_examples
+
+            n_goal_examples_validation_max = self._variant['data_params']['n_'
+                        'goal_examples_validation_max']
+            algorithm_kwargs['goal_examples'] = goal_examples[:n_goal_examples]
+            algorithm_kwargs['goal_examples_validation'] = \
+                goal_examples[n_goal_examples:n_goal_examples_validation_max+n_goal_examples]
+
+        self.algorithm = get_algorithm_from_variant(**algorithm_kwargs)
+        self.algorithm.__setstate__(picklable['algorithm'].__getstate__())
+
+        tf_checkpoint = self._get_tf_checkpoint()
+        status = tf_checkpoint.restore(tf.train.latest_checkpoint(
+            os.path.split(self._tf_checkpoint_prefix(checkpoint_dir))[0]))
+
+        status.assert_consumed().run_restore_ops(self._session)
+        initialize_tf_variables(self._session, only_uninitialized=True)
+
+        # TODO(hartikainen): target Qs should either be checkpointed or pickled.
+        for Q, Q_target in zip(self.algorithm._Qs, self.algorithm._Q_targets):
+            Q_target.set_weights(Q.get_weights())
 
         self._built = True
 

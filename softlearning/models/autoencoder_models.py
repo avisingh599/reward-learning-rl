@@ -4,7 +4,7 @@ import tensorflow as tf
 from softlearning.utils.keras import PicklableKerasModel
 
 
-def spatialAE(latent_dim):
+def spatial_ae(latent_dim):
     """
     Implements the Deep Spatial AutoEncoder described in Finn et al. (2016)
     """
@@ -28,7 +28,7 @@ def spatialAE(latent_dim):
         activation=tf.nn.relu)(conv)
 
     #feature_points = tf.contrib.layers.spatial_softmax(conv, name='spatial_softmax')
-    feature_points = spatialSoftMax()(conv)
+    feature_points = SpatialSoftMax()(conv)
     feature_points_dropout = tf.keras.layers.Dropout(0.5)(feature_points)
 
     low_dim = 7 #image dimension of downsampled image
@@ -60,19 +60,19 @@ def spatialAE(latent_dim):
     return PicklableKerasModel(inputs=input_image, outputs=[feature_points, reconstruction])
 
 
-class spatialSoftMax(tf.keras.layers.Layer):
+class SpatialSoftMax(tf.keras.layers.Layer):
     """
     Implements the spatialSoftMax layer from Levine*, Finn* et al. (2016)
     """
-    def __init__(self):
-        #self.build()
-        #self.shape = self.compute_output_shape(input_shape)
-        super(spatialSoftMax, self).__init__()
+    # def __init__(self):
+    #     #self.build()
+    #     #self.shape = self.compute_output_shape(input_shape)
+    #     super(spatialSoftMax, self).__init__()
 
-    def build(self, input_shape):
-        # self.temperature = self.add_weight(name='spatial_softmax_temperature',
-        #     shape=(1,), initializer='ones', trainable=True)
-        super(spatialSoftMax, self).build(input_shape)
+    # def build(self, input_shape):
+    #     # self.temperature = self.add_weight(name='spatial_softmax_temperature',
+    #     #     shape=(1,), initializer='ones', trainable=True)
+    #     super(spatialSoftMax, self).build(input_shape)
 
     def call(self, inputs):
         #implementation from tf.contrib.layers.spatial_softmax

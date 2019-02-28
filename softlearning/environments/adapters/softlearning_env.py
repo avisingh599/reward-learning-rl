@@ -2,12 +2,13 @@
 
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 
 import numpy as np
 from serializable import Serializable
 
 
-class SoftlearningEnv(Serializable, metaclass=ABCMeta):
+class SoftlearningEnv(metaclass=ABCMeta):
     """The abstract Softlearning environment class.
 
     It's an abstract class defining the interface an adapter needs to implement
@@ -50,7 +51,7 @@ class SoftlearningEnv(Serializable, metaclass=ABCMeta):
         *args    --
         **kwargs --
         """
-        self._Serializable__initialize(locals())
+        #self._Serializable__initialize(locals())
         self._domain = domain
         self._task = task
 
@@ -182,7 +183,7 @@ class SoftlearningEnv(Serializable, metaclass=ABCMeta):
         TODO: Investigate if this can be done somehow else, especially for gym
         envs.
         """
-        return Serializable.clone(self)
+        return deepcopy(self)
 
     @property
     @abstractmethod
