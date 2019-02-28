@@ -8,7 +8,7 @@ def spatial_ae(latent_dim):
     """
     Implements the Deep Spatial AutoEncoder described in Finn et al. (2016)
     """
-    assert latent_dim%2 == 0
+    assert latent_dim%2 == 0, latent_dim
     input_image = tf.keras.layers.Input(shape=(84, 84, 3))
 
     conv = tf.keras.layers.Conv2D(
@@ -64,16 +64,6 @@ class SpatialSoftMax(tf.keras.layers.Layer):
     """
     Implements the spatialSoftMax layer from Levine*, Finn* et al. (2016)
     """
-    # def __init__(self):
-    #     #self.build()
-    #     #self.shape = self.compute_output_shape(input_shape)
-    #     super(spatialSoftMax, self).__init__()
-
-    # def build(self, input_shape):
-    #     # self.temperature = self.add_weight(name='spatial_softmax_temperature',
-    #     #     shape=(1,), initializer='ones', trainable=True)
-    #     super(spatialSoftMax, self).build(input_shape)
-
     def call(self, inputs):
         #implementation from tf.contrib.layers.spatial_softmax
         #the follwoing line does not work because of a pesky

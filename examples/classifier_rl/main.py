@@ -32,13 +32,21 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         variant = copy.deepcopy(self._variant)
 
         #TODO Avi Implement a new version of get_env_from_variant
+        #also rename paths according to this scheme
+        #from softlearning.misc.utils import PROJECT_PATH 
+        #ae_path = os.path.join(PROJECT_PATH, 'autoencoder_models', 'sawyer_pusher_no_texture', 'vae.pwf')
+
         if variant['perception'] == 'autoencoder':
             if variant['texture']:
                 hide_goal = True
-                ae_path = '/root/ray_results/autoencoder_models_tf/2019-02-27_23-14-05_num_expert_images-200_env_type-sawyer_pusher_texture/spatial_ae.h5'
+                ae_path = ('/root/ray_results/autoencoder_models_tf/'
+                '2019-02-27_23-14-05_num_expert_images-200_env_type-sawyer_pusher_texture/'
+                'spatial_ae.h5')
             else:
                 hide_goal = False
-                ae_path = '/root/ray_results/autoencoder_models_tf/2019-02-28_00-48-40_num_expert_images-10_env_type-sawyer_pusher_no_texture/spatial_ae.h5'
+                ae_path = ('/root/ray_results/autoencoder_models_tf/'
+                '2019-02-28_00-48-40_num_expert_images-10_env_type-sawyer_pusher_no_texture/'
+                'spatial_ae.h5')
 
             env = self.env = GymAdapterAutoEncoderTF(
                 #autoencoder_model=ae_model,
@@ -102,7 +110,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
                 raise NotImplementedError
 
             n_goal_examples = self._variant['data_params']['n_goal_examples']
-            assert goal_examples.shape[0] >= n_goal_examples
+            assert goal_examples.shape[0] >= n_goal_examples, goal_examples.shape
 
             n_goal_examples_validation_max = self._variant['data_params']['n_'
                         'goal_examples_validation_max']
@@ -202,9 +210,11 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             'sampler': self.sampler,
             'algorithm': self.algorithm,
             'Qs': self.Qs,
-            'classifier': self.reward_classifier,
             'policy_weights': self.policy.get_weights(),
         }
+
+        if hasattr(self, 'reward_classifier'): 
+            picklables['reward_classifier'] = self.reward_classifier
 
 
 def main(argv=None):

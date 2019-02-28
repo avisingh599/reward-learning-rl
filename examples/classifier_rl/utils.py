@@ -231,7 +231,10 @@ def get_parser(allow_policy_list=False):
         '--perception', type=str, default='autoencoder', 
         choices=('autoencoder', 'full_state'))
     parser.add_argument(
-        '--texture', type=bool, default=False)
+        '--texture', dest='texture', action='store_true')
+    parser.add_argument(
+        '--no-texture', dest='texture', action='store_false')
+    parser.set_defaults(texture=False)
     parser.add_argument(
         '--task', type=str, default=DEFAULT_TASK)
 

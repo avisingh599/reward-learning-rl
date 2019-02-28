@@ -165,6 +165,8 @@ class SACClassifier(SAC):
                         }
             )
 
+        #TODO Avi Make this clearer. Maybe just make all the vectors
+        #the same size and specify number of splits
         reward_sample_observations, reward_goal_observations, \
         reward_goal_observations_validation = np.split(
             reward_sample_goal_observations,
@@ -212,24 +214,9 @@ class SACClassifier(SAC):
 
     @property
     def tf_saveables(self):
-        #TODO Avi Figure out why the code below does not work
-
-        # saveables = super(SACClassifier, self).tf_saveables()
-        # saveables.update({
-        #     '_classifier_optimizer': self._classifier_optimizer
-        # })
-
-        saveables = {
-            '_policy_optimizer': self._policy_optimizer,
-            **{
-                f'Q_optimizer_{i}': optimizer
-                for i, optimizer in enumerate(self._Q_optimizers)
-            },
-            '_log_alpha': self._log_alpha,
-            '_classifier_optimizer': self._classifier_optimizer,
-        }
-
-        if hasattr(self, '_alpha_optimizer'):
-            saveables['_alpha_optimizer'] = self._alpha_optimizer
+        saveables = super(SACClassifier, self).tf_saveables
+        saveables.update({
+            '_classifier_optimizer': self._classifier_optimizer
+        })
 
         return saveables

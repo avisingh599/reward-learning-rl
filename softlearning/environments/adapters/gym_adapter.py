@@ -182,8 +182,8 @@ class GymAdapterPixel(GymAdapter):
         self._env.reset()
         return self._get_obs()
 
-    def step(self, action, *args, **kwargs):
-        _obs, reward, done, env_infos = self._env.step(action, *args, **kwargs)
+    def step(self, *args, **kwargs):
+        _obs, reward, done, env_infos = self._env.step(*args, **kwargs)
         obs = self._get_obs()
         return obs, reward, done, env_infos
 
@@ -251,8 +251,8 @@ class GymAdapterAutoEncoderTF(GymAdapter):
         else:
             raise ValueError(image.shape)
 
-    def step(self, action, *args, **kwargs):
-        _obs, reward, done, env_infos = self._env.step(action, *args, **kwargs)
+    def step(self, *args, **kwargs):
+        _obs, reward, done, env_infos = self._env.step(*args, **kwargs)
         obs = self._get_obs()
         env_infos.update({'feature_points': obs})
         return obs, reward, done, env_infos

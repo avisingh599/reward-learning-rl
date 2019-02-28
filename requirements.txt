@@ -49,7 +49,7 @@ mujoco-py==1.50.1.68
 git+https://github.com/vitchyr/multiworld.git@d76b3dae2e8cbca02924f93d6cc0239c552f6408
 networkx==2.2
 numpy==1.15.4
-opencv-python
+opencv-python==4.0.0.21
 pandas==0.23.4
 Pillow==5.3.0
 plotly==1.9.6
@@ -71,7 +71,7 @@ pytz==2018.7
 PyWavelets==1.0.1
 PyYAML==4.2b4
 psutil==5.4.8
-https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-0.7.0.dev0-cp36-cp36m-manylinux1_x86_64.whl
+ray[rllib,debug]==0.6.2
 redis==3.0.1
 requests==2.20.1
 rsa==3.4.2
@@ -89,7 +89,6 @@ tensorflow==1.12.0
 tensorflow-probability==0.5.0
 termcolor==1.1.0
 toolz==0.9.0
-torch
 uritemplate==3.0.0
 urllib3==1.23
 Werkzeug==0.14.1

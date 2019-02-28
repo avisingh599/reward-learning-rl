@@ -411,7 +411,8 @@ def get_variant_spec_classifier(universe,
 
 
 def get_variant_spec(args):
-    universe, domain, task, algorithm, perception = args.universe, args.domain, args.task, args.algorithm, args.perception
+    universe, domain, task, algorithm, perception = args.universe, \
+        args.domain, args.task, args.algorithm, args.perception
 
     # if ('image' in task.lower()
     #     or 'blind' in task.lower()
