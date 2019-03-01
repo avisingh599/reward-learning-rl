@@ -4,9 +4,6 @@ import numpy as np
 import gym
 from gym import spaces, wrappers
 
-import torch
-from torch.autograd import Variable
-
 from .softlearning_env import SoftlearningEnv
 from softlearning.environments.gym import register_environments
 from softlearning.environments.gym.wrappers import NormalizeActionWrapper
