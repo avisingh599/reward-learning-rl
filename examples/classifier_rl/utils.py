@@ -228,8 +228,11 @@ def get_parser(allow_policy_list=False):
     parser.add_argument(
         '--domain', type=str, default=None)
     parser.add_argument(
-        '--perception', type=str, default='autoencoder', 
+        '--perception', type=str, default='autoencoder',
         choices=('autoencoder', 'full_state'))
+    parser.add_argument(
+        '--autoencoder-type', type=str, default='spatial_ae',
+        choices=('spatial_ae', 'vanilla_ae'))
     parser.add_argument(
         '--texture', dest='texture', action='store_true')
     parser.add_argument(

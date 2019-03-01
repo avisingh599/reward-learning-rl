@@ -429,6 +429,7 @@ def get_variant_spec(args):
 
     variant_spec['perception'] = args.perception
     variant_spec['texture'] = args.texture
+    variant_spec['autoencoder_type'] = args.autoencoder_type
 
     if args.checkpoint_replay_pool is not None:
         variant_spec['run_params']['checkpoint_replay_pool'] = (

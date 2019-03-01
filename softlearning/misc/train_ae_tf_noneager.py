@@ -7,8 +7,7 @@ import imageio
 import numpy as np
 import tensorflow as tf
 
-#from softlearning.autoencoder.autoencoder_tf import VAE, SpatialAE
-from softlearning.models.autoencoder_models import spatial_ae
+from softlearning.models.autoencoder_models import spatial_ae, vanilla_ae
 
 HDD = '/root/softlearning/data/'
 data_directory_experts = { 
@@ -50,14 +49,18 @@ def load_data(n_expert_images, env_type):
 def main():
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--autoencoder_type', type=str, default='spatial_ae',
+        choices=('spatial_ae', 'vanilla_ae'))
     parser.add_argument('--n_expert_images', type=int, default=200)
     parser.add_argument('--env_type', type=str, default='sawyer_pusher_no_texture',
         choices=('sawyer_pusher_no_texture', 'sawyer_pusher_texture'))
     args = parser.parse_args()
 
-    experiment_id= datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    experiment_id+= '_num_expert_images-{}'.format(args.n_expert_images)
-    experiment_id+= '_env_type-{}'.format(args.env_type)
+    #TODO Avi fix this experiment naming
+    experiment_id = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    experiment_id += '_autoencoder_type-{}'.format(args.autoencoder_type)
+    experiment_id += '_num_expert_images-{}'.format(args.n_expert_images)
+    experiment_id += '_env_type-{}'.format(args.env_type)
     log_dir = osp.join(model_save_path, experiment_id)
 
     #limit initial GPU memory allocation
@@ -71,7 +74,13 @@ def main():
     images = load_data(args.n_expert_images, args.env_type)
 
     latent_dim = 32
-    model = spatial_ae(latent_dim)
+    if args.autoencoder_type == 'spatial_ae':
+        model = spatial_ae(latent_dim)
+    elif args.autoencoder_type == 'vanilla_ae':
+        model = vanilla_ae(latent_dim)
+    else:
+        raise NotImplentedError(args.autoencoder_type)
+
     model.compile(optimizer='adam',
         loss={'reconstruction': 'mean_squared_error'})
 
@@ -79,7 +88,7 @@ def main():
         os.makedirs(log_dir)
 
     checkpointCallBack = tf.keras.callbacks.ModelCheckpoint(
-        osp.join(log_dir, 'spatial_ae.h5'), monitor='reconstruction_loss', verbose=1, 
+        osp.join(log_dir, 'model.h5'), monitor='reconstruction_loss', verbose=1, 
         save_best_only=True, save_weights_only=False, mode='min')
     tbCallBack = tf.keras.callbacks.TensorBoard(
         log_dir=log_dir,

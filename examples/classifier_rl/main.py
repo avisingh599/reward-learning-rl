@@ -23,8 +23,26 @@ from softlearning.environments.adapters.gym_adapter import GymAdapter,\
     GymAdapterAutoEncoderTF
 from gym.envs.mujoco.multitask.sawyer_pusher_multienv import \
     SawyerPushXYMultiEnv
-#from softlearning.autoencoder.autoencoder import AE, VAE
-#from softlearning.models.autoencoder_models import spatialAE
+
+#TODO Avi move this somewhere else
+ae_address = {
+    'texture': {
+        'spatial_ae': ('/root/ray_results/autoencoder_models_tf/'
+            '2019-02-27_23-14-05_num_expert_images-200_env_type-sawyer_pusher_texture/'
+            'spatial_ae.h5'),
+        'vanilla_ae': ('/root/ray_results/autoencoder_models_tf/'
+            '2019-03-01_04-31-15_autoencoder_type-vanilla_ae_num_expert_images-200'
+            '_env_type-sawyer_pusher_texture/model.h5')
+
+    },
+
+    'no-texture': {
+        'spatial_ae': ('/root/ray_results/autoencoder_models_tf/'
+            '2019-02-28_00-48-40_num_expert_images-10_env_type-sawyer_pusher_no_texture/'
+            'spatial_ae.h5'),
+
+    }
+}
 
 class ExperimentRunnerClassifierRL(ExperimentRunner):
 
@@ -39,14 +57,10 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         if variant['perception'] == 'autoencoder':
             if variant['texture']:
                 hide_goal = True
-                ae_path = ('/root/ray_results/autoencoder_models_tf/'
-                '2019-02-27_23-14-05_num_expert_images-200_env_type-sawyer_pusher_texture/'
-                'spatial_ae.h5')
+                ae_path = ae_address['texture'][variant['autoencoder_type']]
             else:
                 hide_goal = False
-                ae_path = ('/root/ray_results/autoencoder_models_tf/'
-                '2019-02-28_00-48-40_num_expert_images-10_env_type-sawyer_pusher_no_texture/'
-                'spatial_ae.h5')
+                ae_path = ae_address['no-texture'][variant['autoencoder_type']]
 
             env = self.env = GymAdapterAutoEncoderTF(
                 #autoencoder_model=ae_model,

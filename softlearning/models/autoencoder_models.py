@@ -4,6 +4,59 @@ import tensorflow as tf
 from softlearning.utils.keras import PicklableKerasModel
 
 
+def vanilla_ae(latent_dim):
+
+    input_image = tf.keras.layers.Input(shape=(84, 84, 3))
+
+    conv = tf.keras.layers.Conv2D(
+        filters=32,
+        kernel_size=5,
+        strides=(3, 3),
+        activation=tf.nn.relu)(input_image)
+    conv = tf.keras.layers.Conv2D(
+        filters=64,
+        kernel_size=5,
+        strides=(3, 3),
+        activation=tf.nn.relu)(conv)
+    conv = tf.keras.layers.Conv2D(
+        filters=64,
+        kernel_size=5,
+        strides=(3, 3),
+        activation=tf.nn.relu)(conv)
+
+    flat = tf.keras.layers.Flatten()(conv)
+    latent_features = tf.keras.layers.Dense(latent_dim,
+        activation=tf.nn.relu)(flat)
+
+    low_dim = 7 #image dimension of downsampled image
+    out = tf.keras.layers.Dense(units=low_dim*low_dim*32,
+        activation=tf.nn.relu)(latent_features)
+    out = tf.keras.layers.Reshape(target_shape=(low_dim, low_dim, 32))(out)
+    out = tf.keras.layers.Conv2DTranspose(
+        filters=64,
+        kernel_size=5,
+        strides=(3, 3),
+        padding="SAME",
+        activation=tf.nn.relu)(out)
+    out = tf.keras.layers.Conv2DTranspose(
+        filters=64,
+        kernel_size=5,
+        strides=(2, 2),
+        padding="SAME",
+        activation=tf.nn.relu)(out)
+    out = tf.keras.layers.Conv2DTranspose(
+        filters=32,
+        kernel_size=5,
+        strides=(2, 2),
+        padding="SAME",
+        activation=tf.nn.relu)(out)
+    # No activation
+    reconstruction = tf.keras.layers.Conv2DTranspose(
+        filters=3, kernel_size=3, strides=(1, 1), padding="SAME", name='reconstruction')(out)
+
+    return PicklableKerasModel(inputs=input_image, outputs=[latent_features, reconstruction])
+
+
 def spatial_ae(latent_dim):
     """
     Implements the Deep Spatial AutoEncoder described in Finn et al. (2016)
