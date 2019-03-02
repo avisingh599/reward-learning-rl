@@ -54,13 +54,14 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         #from softlearning.misc.utils import PROJECT_PATH 
         #ae_path = os.path.join(PROJECT_PATH, 'autoencoder_models', 'sawyer_pusher_no_texture', 'vae.pwf')
 
+        if variant['texture']:
+            hide_goal = True
+            ae_path = ae_address['texture'][variant['autoencoder_type']]
+        else:
+            hide_goal = False
+            ae_path = ae_address['no-texture'][variant['autoencoder_type']]
+
         if variant['perception'] == 'autoencoder':
-            if variant['texture']:
-                hide_goal = True
-                ae_path = ae_address['texture'][variant['autoencoder_type']]
-            else:
-                hide_goal = False
-                ae_path = ae_address['no-texture'][variant['autoencoder_type']]
 
             env = self.env = GymAdapterAutoEncoderTF(
                 #autoencoder_model=ae_model,
@@ -79,8 +80,8 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             env = self.env = GymAdapter(
                 env=SawyerPushXYMultiEnv(
                     task_id=40, 
-                    hide_goal=True,
-                    texture=True,
+                    hide_goal=hide_goal,
+                    texture=variant['texture'],
                     pos_noise=0.01,
                     randomize_gripper=False,
                     forward_only=False,
@@ -91,13 +92,15 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             env = self.env = GymAdapterPixel(
                 env=SawyerPushXYMultiEnv(
                     task_id=40, 
-                    hide_goal=True,
-                    texture=True,
+                    hide_goal=hide_goal,
+                    texture=variant['texture'],
                     pos_noise=0.01,
                     randomize_gripper=False,
                     forward_only=False,
                     ),
                 )
+        else:
+            raise NotImplementedError
 
         replay_pool = self.replay_pool = (
             get_replay_pool_from_variant(variant, env))
@@ -130,6 +133,10 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
                 goal_examples = goal_aefeatures
             elif self._variant['perception'] == 'full_state':
                 goal_examples = env._env.env.get_expert_fullstates()
+            elif self._variant['perception'] == 'pixel':
+                goal_images = env._env.env.get_expert_images()
+                n_images = goal_images.shape[0]
+                goal_examples = goal_images.reshape((n_images, -1))
             else:
                 raise NotImplementedError
 
