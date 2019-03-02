@@ -13,7 +13,7 @@ ADAPTERS = {
 
 
 def get_environment(universe, domain, task, env_params):
-    return ADAPTERS[universe](domain, task, **env_params)
+    return ADAPTERS[universe](domain=domain, task=task, **env_params)
 
 
 def get_environment_from_variant(variant):

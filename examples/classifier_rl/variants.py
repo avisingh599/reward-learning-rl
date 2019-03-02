@@ -70,6 +70,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'store_extra_policy_info': False,
             'action_prior': 'uniform',
             'n_initial_exploration_steps': int(1e3),
+            'n_epochs': 300,
         }
     },
     'SACClassifier': {
@@ -388,24 +389,24 @@ def get_variant_spec_classifier(universe,
 #     variant_spec = get_variant_spec_base(
 #         universe, domain, task, policy, algorithm, *args, **kwargs)
 
-#     if 'image' in task.lower() or 'image' in domain.lower():
-#         preprocessor_params = {
-#             'type': 'convnet_preprocessor',
-#             'kwargs': {
-#                 'image_shape': variant_spec['env_params']['image_shape'],
-#                 'output_size': M,
-#                 'conv_filters': (4, 4),
-#                 'conv_kernel_sizes': ((3, 3), (3, 3)),
-#                 'pool_type': 'MaxPool2D',
-#                 'pool_sizes': ((2, 2), (2, 2)),
-#                 'pool_strides': (2, 2),
-#                 'dense_hidden_layer_sizes': (),
-#             },
-#         }
-#         variant_spec['policy_params']['kwargs']['preprocessor_params'] = (
-#             preprocessor_params.copy())
-#         variant_spec['Q_params']['kwargs']['preprocessor_params'] = (
-#             preprocessor_params.copy())
+    # if 'image' in task.lower() or 'image' in domain.lower():
+    #     preprocessor_params = {
+    #         'type': 'convnet_preprocessor',
+    #         'kwargs': {
+    #             'image_shape': variant_spec['env_params']['image_shape'],
+    #             'output_size': M,
+    #             'conv_filters': (4, 4),
+    #             'conv_kernel_sizes': ((3, 3), (3, 3)),
+    #             'pool_type': 'MaxPool2D',
+    #             'pool_sizes': ((2, 2), (2, 2)),
+    #             'pool_strides': (2, 2),
+    #             'dense_hidden_layer_sizes': (),
+    #         },
+    #     }
+    #     variant_spec['policy_params']['kwargs']['preprocessor_params'] = (
+    #         preprocessor_params.copy())
+    #     variant_spec['Q_params']['kwargs']['preprocessor_params'] = (
+    #         preprocessor_params.copy())
 
 #     return variant_spec
 
@@ -430,6 +431,29 @@ def get_variant_spec(args):
     variant_spec['perception'] = args.perception
     variant_spec['texture'] = args.texture
     variant_spec['autoencoder_type'] = args.autoencoder_type
+
+    if args.perception == 'pixel':
+    #if 'image' in task.lower() or 'image' in domain.lower():
+        preprocessor_params = {
+            'type': 'convnet_preprocessor',
+            'kwargs': {
+                #'image_shape': variant_spec['env_params']['image_shape'],
+                'image_shape': (84, 84, 3),
+                'output_size': M,
+                'conv_filters': (32, 32),
+                'conv_kernel_sizes': ((5, 5), (5, 5)),
+                'pool_type': 'MaxPool2D',
+                'pool_sizes': ((2, 2), (2, 2)),
+                'pool_strides': (2, 2),
+                'dense_hidden_layer_sizes': (),
+            },
+        }
+        variant_spec['policy_params']['kwargs']['preprocessor_params'] = (
+            preprocessor_params.copy())
+        variant_spec['Q_params']['kwargs']['preprocessor_params'] = (
+            preprocessor_params.copy())
+        variant_spec['replay_pool_params']['kwargs']['max_size'] = 5e5
+
 
     if args.checkpoint_replay_pool is not None:
         variant_spec['run_params']['checkpoint_replay_pool'] = (

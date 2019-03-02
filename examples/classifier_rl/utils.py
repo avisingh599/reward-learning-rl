@@ -229,7 +229,7 @@ def get_parser(allow_policy_list=False):
         '--domain', type=str, default=None)
     parser.add_argument(
         '--perception', type=str, default='autoencoder',
-        choices=('autoencoder', 'full_state'))
+        choices=('autoencoder', 'full_state', 'pixel'))
     parser.add_argument(
         '--autoencoder-type', type=str, default='spatial_ae',
         choices=('spatial_ae', 'vanilla_ae'))

@@ -20,7 +20,7 @@ from examples.instrument import run_example_local
 from examples.development.main import ExperimentRunner
 
 from softlearning.environments.adapters.gym_adapter import GymAdapter,\
-    GymAdapterAutoEncoderTF
+    GymAdapterAutoEncoderTF, GymAdapterPixel
 from gym.envs.mujoco.multitask.sawyer_pusher_multienv import \
     SawyerPushXYMultiEnv
 
@@ -86,8 +86,18 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
                     forward_only=False,
                     ),
                 )
-        else:
-            raise NotImplementedError
+        
+        elif variant['perception'] == 'pixel':
+            env = self.env = GymAdapterPixel(
+                env=SawyerPushXYMultiEnv(
+                    task_id=40, 
+                    hide_goal=True,
+                    texture=True,
+                    pos_noise=0.01,
+                    randomize_gripper=False,
+                    forward_only=False,
+                    ),
+                )
 
         replay_pool = self.replay_pool = (
             get_replay_pool_from_variant(variant, env))
