@@ -70,7 +70,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'store_extra_policy_info': False,
             'action_prior': 'uniform',
             'n_initial_exploration_steps': int(1e3),
-            'n_epochs': 300,
+            'n_epochs': 200,
         }
     },
     'SACClassifier': {
@@ -91,7 +91,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'adam',
             'reward_type': 'logits',
-            'n_epochs': 300,
+            'n_epochs': 200,
         }
     },
     'RAQ': {
@@ -113,7 +113,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'adam',
             'reward_type': 'logits',
-            'n_epochs': 300,
+            'n_epochs': 200,
         }
     },
     'VICE': {
@@ -133,7 +133,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             #'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'adam',
-            'n_epochs': 300,
+            'n_epochs': 200,
         }
     },
     'VICERAQ': {
@@ -153,7 +153,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             # 'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
             # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'adam',
-            'n_epochs': 300,
+            'n_epochs': 200,
         }
     },
     'SQL': {
@@ -351,7 +351,7 @@ def get_variant_spec_classifier(universe,
         }
 
     variant_spec['data_params'] = {
-        'n_goal_examples': 200,
+        'n_goal_examples': 50,
         'n_goal_examples_validation_max': 100,
     }
 
@@ -440,7 +440,7 @@ def get_variant_spec(args):
                 #'image_shape': variant_spec['env_params']['image_shape'],
                 'image_shape': (84, 84, 3),
                 'output_size': M,
-                'conv_filters': (32, 32),
+                'conv_filters': (8, 8),
                 'conv_kernel_sizes': ((5, 5), (5, 5)),
                 'pool_type': 'MaxPool2D',
                 'pool_sizes': ((2, 2), (2, 2)),

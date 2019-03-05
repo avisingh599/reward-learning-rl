@@ -62,9 +62,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             ae_path = ae_address['no-texture'][variant['autoencoder_type']]
 
         if variant['perception'] == 'autoencoder':
-
             env = self.env = GymAdapterAutoEncoderTF(
-                #autoencoder_model=ae_model,
                 autoencoder_savepath=ae_path,
                 env=SawyerPushXYMultiEnv(
                     task_id=40, 
