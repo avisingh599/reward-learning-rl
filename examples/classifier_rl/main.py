@@ -163,7 +163,6 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             with open(pickle_path, 'rb') as f:
                 picklable = pickle.load(f)
 
-        #import IPython; IPython.embed()
         env = self.env = picklable['env']
 
         replay_pool = self.replay_pool = (
@@ -193,7 +192,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         }
 
         if self._variant['algorithm_params']['type'] in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
-            reward_classifier = self.reward_classifier = picklable['classifier'] 
+            reward_classifier = self.reward_classifier = picklable['reward_classifier']
             algorithm_kwargs['classifier'] = reward_classifier
 
             #TODO Avi maybe write a "get_data_from_variant"
@@ -203,6 +202,10 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
                 goal_examples = goal_aefeatures
             elif self._variant['perception'] == 'full_state':
                 goal_examples = env._env.env.get_expert_fullstates()
+            elif self._variant['perception'] == 'pixel':
+                goal_images = env._env.env.get_expert_images()
+                n_images = goal_images.shape[0]
+                goal_examples = goal_images.reshape((n_images, -1))
             else:
                 raise NotImplementedError
 
@@ -233,7 +236,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
 
     @property
     def picklables(self):
-        return {
+        picklables = {
             'variant': self._variant,
             'env': self.env,
             'sampler': self.sampler,
@@ -245,6 +248,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         if hasattr(self, 'reward_classifier'): 
             picklables['reward_classifier'] = self.reward_classifier
 
+        return picklables
 
 def main(argv=None):
     """Run ExperimentRunner locally on ray.
