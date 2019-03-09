@@ -11,18 +11,15 @@ class VICERAQ(VICE):
             **kwargs,
     ):
         super(VICE, self).__init__(**kwargs)
-        self._last_active_query_idx = 0
 
     def _epoch_after_hook(self, *args, **kwargs):
-
         #TODO Avi this code is repeated from RAQ
         #figure out some clean way to reuse it
-        observations_of_interest = self._pool.fields['observations'][
-                        self._last_active_query_idx:self._pool._pointer]
-        labels_of_interest = self._pool.fields['is_goal'][
-                        self._last_active_query_idx:self._pool._pointer]
 
-        self._last_active_query_idx = self._pool._pointer 
+        batch_of_interest = self._pool.last_n_batch(self._epoch_length)
+        observations_of_interest = batch_of_interest['observations']
+        labels_of_interest = batch_of_interest['is_goal']
+
         rewards_of_interest = self._session.run(self._reward_t, feed_dict={
                                     self._observations_ph: observations_of_interest})
 

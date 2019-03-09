@@ -375,6 +375,11 @@ def get_variant_spec_classifier(universe,
                 }
             },
 
+            #TODO Avi implement this active query frequency thing
+            'active_params': {
+                'active_query_frequency': 1,
+            }
+
             })
 
     return variant_spec

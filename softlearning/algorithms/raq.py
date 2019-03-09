@@ -14,11 +14,10 @@ class RAQ(SACClassifier):
 
         goal_example_feature_dim = self._goal_examples.shape[1]
         self._negative_examples = np.empty((0, goal_example_feature_dim))
-        self._last_active_query_idx = 0
 
     def _get_classifier_feed_dict(self):
         rand_positive_ind = np.random.randint(
-            self._goal_examples.shape[0], 
+            self._goal_examples.shape[0],
             size=self._classifier_batch_size)
         rand_negative_ind = np.random.randint(
             self._negative_examples.shape[0], 
@@ -47,12 +46,11 @@ class RAQ(SACClassifier):
         #forward recent samples from the replay pool though the classifier
         #select ind with highest probability/reward
         #add it to set of positives or negatives based on whether it is positve or not
-        observations_of_interest = self._pool.fields['observations'][
-                        self._last_active_query_idx:self._pool._pointer]
-        labels_of_interest = self._pool.fields['is_goal'][
-                        self._last_active_query_idx:self._pool._pointer]
 
-        self._last_active_query_idx = self._pool._pointer 
+        batch_of_interest = self._pool.last_n_batch(self._epoch_length)
+        observations_of_interest = batch_of_interest['observations']
+        labels_of_interest = batch_of_interest['is_goal']
+
         rewards_of_interest = self._session.run(self._reward_t, feed_dict={
                                     self._observations_ph: observations_of_interest})
 
@@ -68,6 +66,7 @@ class RAQ(SACClassifier):
                     self._negative_examples,
                     np.expand_dims(observations_of_interest[max_ind], axis=0) 
                     ])
+
         #train/re-train the classifier
         if self._epoch == 0:
             self._add_randomly_collected_negatives()

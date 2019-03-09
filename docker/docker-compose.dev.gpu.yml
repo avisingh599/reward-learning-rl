@@ -31,6 +31,7 @@ services:
        - ..:/root/softlearning
        - ../data:/root/ray_results
        - ../../proj_4/gym-larry:/root/gym-larry
+       - ../../multiworld:/root/multiworld
     command:
       - bash
     stdin_open: true

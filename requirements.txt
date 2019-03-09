@@ -37,6 +37,7 @@ h5py==2.8.0
 httplib2==0.12.0
 idna==2.7
 imageio==2.4.1
+ipython==7.3.0
 jmespath==0.9.3
 Keras-Applications==1.0.6
 Keras-Preprocessing==1.0.5
@@ -46,7 +47,6 @@ Markdown==3.0.1
 matplotlib==3.0.2
 more-itertools==4.3.0
 mujoco-py==1.50.1.68
-git+https://github.com/vitchyr/multiworld.git@d76b3dae2e8cbca02924f93d6cc0239c552f6408
 networkx==2.2
 numpy==1.15.4
 opencv-python==4.0.0.21
