@@ -5,6 +5,7 @@ import pickle
 import sys
 
 import tensorflow as tf
+import numpy as np
 from ray import tune
 
 from softlearning.environments.utils import get_environment_from_variant
@@ -23,6 +24,14 @@ from softlearning.environments.adapters.gym_adapter import GymAdapter,\
     GymAdapterAutoEncoderTF, GymAdapterPixel
 from gym.envs.mujoco.multitask.sawyer_pusher_multienv import \
     SawyerPushXYMultiEnv
+
+#TODO Avi move this to a get_env function
+from multiworld.envs.mujoco.sawyer_xyz.sawyer_push_and_reach_env import \
+    SawyerPushAndReachXYEnv, SawyerPushAndReachXYZEnv
+from multiworld.core.image_env import ImageEnv
+from multiworld.core.flat_goal_env import FlatGoalEnv
+from multiworld.envs.mujoco.cameras import sawyer_pusher_camera_upright_v2
+
 
 #TODO Avi move this somewhere else
 ae_address = {
@@ -61,6 +70,11 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             hide_goal = False
             ae_path = ae_address['no-texture'][variant['autoencoder_type']]
 
+        goal_vec = {
+            #'state_desired_goal': np.asarray([0.0, 0.7, 0.02, 0.0, 0.8])
+            'state_desired_goal': np.asarray([0.0, 0.6, 0.02, -0.15, 0.6])   
+        }
+
         if variant['perception'] == 'autoencoder':
             env = self.env = GymAdapterAutoEncoderTF(
                 autoencoder_savepath=ae_path,
@@ -75,28 +89,28 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
                 )
 
         elif variant['perception'] == 'full_state':
-            env = self.env = GymAdapter(
-                env=SawyerPushXYMultiEnv(
-                    task_id=40, 
-                    hide_goal=hide_goal,
-                    texture=variant['texture'],
-                    pos_noise=0.01,
-                    randomize_gripper=False,
-                    forward_only=False,
-                    ),
-                )
-        
+            env = SawyerPushAndReachXYEnv(
+                    fix_goal=True,
+                    reward_type='puck_distance',
+                    fixed_goal=goal_vec['state_desired_goal'],
+                    puck_radius=.05,
+                    )
+            env_flat = FlatGoalEnv(env, obs_keys=['observation'])
+            env = self.env = GymAdapter(env=env_flat)
+
         elif variant['perception'] == 'pixel':
-            env = self.env = GymAdapterPixel(
-                env=SawyerPushXYMultiEnv(
-                    task_id=40, 
-                    hide_goal=hide_goal,
-                    texture=variant['texture'],
-                    pos_noise=0.01,
-                    randomize_gripper=False,
-                    forward_only=False,
-                    ),
-                )
+            env = ImageEnv(
+                    SawyerPushAndReachXYEnv(
+                        fix_goal=True,
+                        reward_type='puck_distance',
+                        fixed_goal=goal_vec['state_desired_goal'],
+                        puck_radius=.05,
+                        ),
+                    init_camera=sawyer_pusher_camera_upright_v2,
+                    normalize=True,
+                    )
+            env_flat = FlatGoalEnv(env, obs_keys=['image_observation'])
+            env = self.env = GymAdapter(env=env_flat)
         else:
             raise NotImplementedError
 
@@ -125,27 +139,39 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             algorithm_kwargs['classifier'] = reward_classifier
 
             #TODO Avi maybe write a "get_data_from_variant"
-            if self._variant['perception'] == 'autoencoder':
-                goal_images = env._env.env.get_expert_images()
-                goal_aefeatures = env.feature_points(goal_images)
-                goal_examples = goal_aefeatures
-            elif self._variant['perception'] == 'full_state':
-                goal_examples = env._env.env.get_expert_fullstates()
-            elif self._variant['perception'] == 'pixel':
-                goal_images = env._env.env.get_expert_images()
-                n_images = goal_images.shape[0]
-                goal_examples = goal_images.reshape((n_images, -1))
-            else:
-                raise NotImplementedError
+            # if self._variant['perception'] == 'autoencoder':
+            #     goal_images = env._env.env.get_expert_images()
+            #     goal_aefeatures = env.feature_points(goal_images)
+            #     goal_examples = goal_aefeatures
+            # elif self._variant['perception'] == 'full_state':
+            #     goal_examples = env._env.env.get_expert_fullstates()
+            # elif self._variant['perception'] == 'pixel':
+            #     goal_images = env._env.env.get_expert_images()
+            #     n_images = goal_images.shape[0]
+            #     goal_examples = goal_images.reshape((n_images, -1))
+            # else:
+            #     raise NotImplementedError
 
+            #n_goal_examples = self._variant['data_params']['n_goal_examples']
+            #assert goal_examples.shape[0] >= n_goal_examples, goal_examples.shape
+
+
+            goal_examples = []
+            total_goal_examples = self._variant['data_params']['n_goal_examples'] \
+                + self._variant['data_params']['n_goal_examples_validation_max']
+            
+            for i in range(total_goal_examples):
+                env._env.env.reset()
+                goal_vec['state_desired_goal'] += np.random.uniform(low=-0.01, high=0.01, size=(5,))
+                env._env.env.set_to_goal(goal_vec)
+                ob, rew, done, info = env_flat.step(np.asarray([0.,0.]))
+                goal_examples.append(ob)
+            goal_examples = np.asarray(goal_examples)
+            env._env.env.reset()
             n_goal_examples = self._variant['data_params']['n_goal_examples']
-            assert goal_examples.shape[0] >= n_goal_examples, goal_examples.shape
-
-            n_goal_examples_validation_max = self._variant['data_params']['n_'
-                        'goal_examples_validation_max']
             algorithm_kwargs['goal_examples'] = goal_examples[:n_goal_examples]
             algorithm_kwargs['goal_examples_validation'] = \
-                goal_examples[n_goal_examples:n_goal_examples_validation_max+n_goal_examples]
+                goal_examples[n_goal_examples:]
 
         self.algorithm = get_algorithm_from_variant(**algorithm_kwargs)
 

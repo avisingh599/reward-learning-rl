@@ -26,7 +26,7 @@ def get_reward_classifier_from_variant(variant, env, *args, **kwargs):
     classifier_kwargs = deepcopy(classifier_params['kwargs'])
 
     # TODO Avi maybe have some optional preprocessing
-    preprocessor_params = classifier_kwargs.pop('preprocessor_params',)
+    preprocessor_params = classifier_kwargs.pop('preprocessor_params', None)
     preprocessor = get_preprocessor_from_params(env, preprocessor_params)
 
     return create_feedforward_reward_classifier(
