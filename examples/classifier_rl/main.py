@@ -159,8 +159,8 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             goal_examples = []
             total_goal_examples = self._variant['data_params']['n_goal_examples'] \
                 + self._variant['data_params']['n_goal_examples_validation_max']
-            
-            for i in range(total_goal_examples):
+
+            for _ in range(total_goal_examples):
                 env._env.env.reset()
                 goal_vec['state_desired_goal'] += np.random.uniform(low=-0.01, high=0.01, size=(5,))
                 env._env.env.set_to_goal(goal_vec)

@@ -361,6 +361,7 @@ def get_variant_spec_classifier(universe,
             'sampler_params': {
                 'type': 'ActiveSampler',
                 'kwargs': {
+                    'is_goal_key': 'puck_success',
                     'max_path_length': MAX_PATH_LENGTH_PER_DOMAIN.get(
                         domain, DEFAULT_MAX_PATH_LENGTH),
                     'min_pool_size': MAX_PATH_LENGTH_PER_DOMAIN.get(
