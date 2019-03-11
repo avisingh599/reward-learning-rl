@@ -94,6 +94,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
                     reward_type='puck_distance',
                     fixed_goal=goal_vec['state_desired_goal'],
                     puck_radius=.05,
+                    indicator_threshold=0.03,
                     )
             env_flat = FlatGoalEnv(env, obs_keys=['observation'])
             env = self.env = GymAdapter(env=env_flat)
@@ -105,6 +106,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
                         reward_type='puck_distance',
                         fixed_goal=goal_vec['state_desired_goal'],
                         puck_radius=.05,
+                        indicator_threshold=0.03,
                         ),
                     init_camera=sawyer_pusher_camera_upright_v2,
                     normalize=True,
