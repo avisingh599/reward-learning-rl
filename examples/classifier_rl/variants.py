@@ -2,6 +2,7 @@ from ray import tune
 import numpy as np
 
 from softlearning.misc.utils import get_git_rev, deep_update
+from softlearning.misc.generate_goal_examples import DOOR_TASKS, PUSH_TASKS
 
 M = 256
 REPARAMETERIZE = True
@@ -177,97 +178,6 @@ ALGORITHM_PARAMS_ADDITIONAL = {
 }
 
 DEFAULT_NUM_EPOCHS = 200
-
-# NUM_EPOCHS_PER_DOMAIN = {
-#     'Swimmer': int(3e2),
-#     'Hopper': int(1e3),
-#     'HalfCheetah': int(3e3),
-#     'Walker': int(3e3),
-#     'Ant': int(3e3),
-#     'Humanoid': int(1e4),
-#     'Pusher2d': int(2e3),
-#     'HandManipulatePen': int(1e4),
-#     'HandManipulateEgg': int(1e4),
-#     'HandManipulateBlock': int(1e4),
-#     'HandReach': int(1e4),
-#     'Point2DEnv': int(200),
-#     'Reacher': int(200),
-# }
-
-# ALGORITHM_PARAMS_PER_DOMAIN = {
-#     **{
-#         domain: {
-#             'kwargs': {
-#                 'n_epochs': NUM_EPOCHS_PER_DOMAIN.get(
-#                     domain, DEFAULT_NUM_EPOCHS),
-#                 'n_initial_exploration_steps': (
-#                     MAX_PATH_LENGTH_PER_DOMAIN.get(
-#                         domain, DEFAULT_MAX_PATH_LENGTH
-#                     ) * 10),
-#             }
-#         } for domain in NUM_EPOCHS_PER_DOMAIN
-#     }
-# }
-
-# ENV_PARAMS = {
-#     'Swimmer': {  # 2 DoF
-#     },
-#     'Hopper': {  # 3 DoF
-#     },
-#     'HalfCheetah': {  # 6 DoF
-#     },
-#     'Walker': {  # 6 DoF
-#     },
-#     'Ant': {  # 8 DoF
-#         'Custom': {
-#             'healthy_reward': 0.0,
-#             'healthy_z_range': (-np.inf, np.inf),
-#             'exclude_current_positions_from_observation': False,
-#         }
-#     },
-#     'Humanoid': {  # 17 DoF
-#         'Custom': {
-#             'healthy_reward': 0.0,
-#             'healthy_z_range': (-np.inf, np.inf),
-#             'exclude_current_positions_from_observation': False,
-#         }
-#     },
-#     'Pusher2d': {  # 3 DoF
-#         'Default': {
-#             'arm_object_distance_cost_coeff': 0.0,
-#             'goal_object_distance_cost_coeff': 1.0,
-#             'goal': (0, -1),
-#         },
-#         'DefaultReach': {
-#             'arm_goal_distance_cost_coeff': 1.0,
-#             'arm_object_distance_cost_coeff': 0.0,
-#         },
-#         'ImageDefault': {
-#             'image_shape': (32, 32, 3),
-#             'arm_object_distance_cost_coeff': 0.0,
-#             'goal_object_distance_cost_coeff': 3.0,
-#         },
-#         'ImageReach': {
-#             'image_shape': (32, 32, 3),
-#             'arm_goal_distance_cost_coeff': 1.0,
-#             'arm_object_distance_cost_coeff': 0.0,
-#         },
-#         'BlindReach': {
-#             'image_shape': (32, 32, 3),
-#             'arm_goal_distance_cost_coeff': 1.0,
-#             'arm_object_distance_cost_coeff': 0.0,
-#         }
-#     },
-#     'Point2DEnv': {
-#         'Default': {
-#             'observation_keys': ('observation', ),
-#         },
-#         'Wall': {
-#             'observation_keys': ('observation', ),
-#         },
-#     }
-# }
-
 NUM_CHECKPOINTS = 10
 
 
@@ -351,17 +261,25 @@ def get_variant_spec_classifier(universe,
         }
 
     variant_spec['data_params'] = {
-        'n_goal_examples': 50,
+        'n_goal_examples': 5,
         'n_goal_examples_validation_max': 100,
     }
 
     if algorithm in ['RAQ', 'VICERAQ']:
+
+        if task in DOOR_TASKS:
+            is_goal_key = 'angle_success'
+        elif task in PUSH_TASKS:
+            is_goal_key = 'puck_success'
+        else:
+            raise NotImplementedError('Success metric not defined for task')
+
         variant_spec.update({
 
             'sampler_params': {
                 'type': 'ActiveSampler',
                 'kwargs': {
-                    'is_goal_key': 'puck_success',
+                    'is_goal_key': is_goal_key,
                     'max_path_length': MAX_PATH_LENGTH_PER_DOMAIN.get(
                         domain, DEFAULT_MAX_PATH_LENGTH),
                     'min_pool_size': MAX_PATH_LENGTH_PER_DOMAIN.get(
@@ -385,48 +303,10 @@ def get_variant_spec_classifier(universe,
 
     return variant_spec
 
-# def get_variant_spec_image(universe,
-#                            domain,
-#                            task,
-#                            policy,
-#                            algorithm,
-#                            *args,
-#                            **kwargs):
-#     variant_spec = get_variant_spec_base(
-#         universe, domain, task, policy, algorithm, *args, **kwargs)
-
-    # if 'image' in task.lower() or 'image' in domain.lower():
-    #     preprocessor_params = {
-    #         'type': 'convnet_preprocessor',
-    #         'kwargs': {
-    #             'image_shape': variant_spec['env_params']['image_shape'],
-    #             'output_size': M,
-    #             'conv_filters': (4, 4),
-    #             'conv_kernel_sizes': ((3, 3), (3, 3)),
-    #             'pool_type': 'MaxPool2D',
-    #             'pool_sizes': ((2, 2), (2, 2)),
-    #             'pool_strides': (2, 2),
-    #             'dense_hidden_layer_sizes': (),
-    #         },
-    #     }
-    #     variant_spec['policy_params']['kwargs']['preprocessor_params'] = (
-    #         preprocessor_params.copy())
-    #     variant_spec['Q_params']['kwargs']['preprocessor_params'] = (
-    #         preprocessor_params.copy())
-
-#     return variant_spec
-
-
 def get_variant_spec(args):
-    universe, domain, task, algorithm, perception = args.universe, \
-        args.domain, args.task, args.algorithm, args.perception
+    universe, domain = args.universe, args.domain
+    task, algorithm = args.task, args.algorithm
 
-    # if ('image' in task.lower()
-    #     or 'blind' in task.lower()
-    #     or 'image' in domain.lower()):
-    #     variant_spec = get_variant_spec_image(
-    #         universe, domain, task, args.policy, args.algorithm)
-    # else:
     if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
         variant_spec = get_variant_spec_classifier(
             universe, domain, task, args.policy, args.algorithm)
@@ -434,12 +314,7 @@ def get_variant_spec(args):
         variant_spec = get_variant_spec_base(
             universe, domain, task, args.policy, args.algorithm)
 
-    variant_spec['perception'] = args.perception
-    variant_spec['texture'] = args.texture
-    variant_spec['autoencoder_type'] = args.autoencoder_type
-
-    if args.perception == 'pixel':
-    #if 'image' in task.lower() or 'image' in domain.lower():
+    if 'Image84' in task:
         preprocessor_params = {
             'type': 'convnet_preprocessor',
             'kwargs': {
@@ -463,6 +338,9 @@ def get_variant_spec(args):
         if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
             variant_spec['classifier_params']['kwargs']['preprocessor_params'] = (
                 preprocessor_params.copy())
+
+    elif 'Image' in task:
+        raise NotImplementedError('Add convnet preprocessor for this image input')
 
     if args.checkpoint_replay_pool is not None:
         variant_spec['run_params']['checkpoint_replay_pool'] = (

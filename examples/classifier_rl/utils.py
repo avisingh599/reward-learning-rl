@@ -8,81 +8,16 @@ import softlearning.algorithms.utils as alg_utils
 import softlearning.environments.utils as env_utils
 from softlearning.misc.utils import datetimestamp
 
-
-DEFAULT_UNIVERSE = 'gym'
-DEFAULT_DOMAIN = 'Swimmer'
-DEFAULT_TASK = 'Default'
-DEFAULT_ALGORITHM = 'SAC'
-
-# TASKS_BY_DOMAIN_BY_UNIVERSE = {
-#     universe: {
-#         domain: tuple(tasks.keys())
-#         for domain, tasks in domains.items()
-#     }
-#     for universe, domains in env_utils.ENVIRONMENTS.items()
-# }
-
-# AVAILABLE_TASKS = set(sum(
-#     [
-#         tasks
-#         for universe, domains in TASKS_BY_DOMAIN_BY_UNIVERSE.items()
-#         for domain, tasks in domains.items()
-#     ],
-#     ()))
-
-# DOMAINS_BY_UNIVERSE = {
-#     universe: tuple(domains.keys())
-#     for universe, domains in env_utils.ENVIRONMENTS.items()
-# }
-
-# AVAILABLE_DOMAINS = set(sum(DOMAINS_BY_UNIVERSE.values(), ()))
-
-# UNIVERSES = tuple(env_utils.ENVIRONMENTS.keys())
-
+DEFAULT_TASK = 'StateDoorPullEnv-v0'
+DEFAULT_ALGORITHM = 'VICE'
 AVAILABLE_ALGORITHMS = set(alg_utils.ALGORITHM_CLASSES.keys())
 
-
-def parse_universe(env_name):
-    universe = next(
-        (universe for universe in UNIVERSES if universe in env_name),
-        DEFAULT_UNIVERSE)
-    return universe
-
-
-def parse_domain_task(env_name, universe):
-    env_name = env_name.replace(universe, '').strip('-')
-    domains = DOMAINS_BY_UNIVERSE[universe]
-    domain = next(domain for domain in domains if domain in env_name)
-
-    env_name = env_name.replace(domain, '').strip('-')
-    tasks = TASKS_BY_DOMAIN_BY_UNIVERSE[universe][domain]
-    task = next((task for task in tasks if task == env_name), None)
-
-    if task is None:
-        matching_tasks = [task for task in tasks if task in env_name]
-        if len(matching_tasks) > 1:
-            raise ValueError(
-                "Task name cannot be unmbiguously determined: {}."
-                " Following task names match: {}"
-                "".format(env_name, matching_tasks))
-        elif len(matching_tasks) == 1:
-            task = matching_tasks[-1]
-        else:
-            task = DEFAULT_TASK
-
-    return domain, task
-
-
-def parse_universe_domain_task(args):
-    universe, domain, task = args.universe, args.domain, args.task
-
-    if not universe:
-        universe = parse_universe(args.env)
-
-    if (not domain) or (not task):
-        domain, task = parse_domain_task(args.env, universe)
-
-    return universe, domain, task
+import gym
+from multiworld.envs.mujoco import register_goal_example_envs
+envs_before = set(env_spec.id for env_spec in gym.envs.registry.all())
+register_goal_example_envs()
+envs_after = set(env_spec.id for env_spec in gym.envs.registry.all())
+goal_example_envs = tuple(sorted(envs_after - envs_before))
 
 
 def add_ray_init_args(parser):
@@ -224,22 +159,12 @@ def get_parser(allow_policy_list=False):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--universe', type=str, default=None)
+        '--universe', type=str, default='multiworld', choices=('multiworld,'))
     parser.add_argument(
-        '--domain', type=str, default=None)
+        '--domain', type=str, default='mujoco', choices=('mujoco',))
     parser.add_argument(
-        '--perception', type=str, default='autoencoder',
-        choices=('autoencoder', 'full_state', 'pixel'))
-    parser.add_argument(
-        '--autoencoder-type', type=str, default='spatial_ae',
-        choices=('spatial_ae', 'vanilla_ae'))
-    parser.add_argument(
-        '--texture', dest='texture', action='store_true')
-    parser.add_argument(
-        '--no-texture', dest='texture', action='store_false')
-    parser.set_defaults(texture=False)
-    parser.add_argument(
-        '--task', type=str, default=DEFAULT_TASK)
+        '--task', type=str, default=DEFAULT_TASK, 
+        choices=goal_example_envs)
 
     parser.add_argument(
         '--checkpoint-replay-pool',
