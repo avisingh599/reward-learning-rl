@@ -133,7 +133,7 @@ def add_ray_tune_args(parser):
             "['checkpoint_at_end']."))
     parser.add_argument(
         '--max-failures',
-        default=3,
+        default=0,
         type=int,
         help=tune_help_string(
             "Try to recover a trial from its last checkpoint at least this "

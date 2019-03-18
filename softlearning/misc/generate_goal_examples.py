@@ -3,13 +3,15 @@ import numpy as np
 from softlearning.environments.utils import get_goal_example_environment_from_variant
 
 DOOR_TASKS = [
-    'StateSawyerDoorPullEnv-v0',
-    'Image84SawyerDoorPullEnv-v0'
+    'StateSawyerDoorPullHookEnv-v0',
+    'Image84SawyerDoorPullHookEnv-v0'
     ]
 
 PUSH_TASKS = [
     'StateSawyerPushSidewaysEnv-v0',
-    'Image84SawyerPushSidewaysEnv-v0'
+    'Image84SawyerPushSidewaysEnv-v0',
+    'StateSawyerPushForwardEnv-v0',
+    'Image84SawyerPushForwardEnv-v0',
     ]
 
 def get_goal_example_from_variant(variant):
@@ -95,7 +97,7 @@ def generate_door_goal_examples(total_goal_examples, env):
         #state = np.concatenate([pos, angle])
 
         if endeff_distance < 0.05 and angle_distance < 0.1:
-            ob, rew, done, info = env.step(np.asarray([0.,0.]))
+            ob, rew, done, info = env.step(np.asarray([0.,0.,0.]))
             goal_examples.append(ob)
             n+=1
 
