@@ -165,6 +165,8 @@ def get_parser(allow_policy_list=False):
     parser.add_argument(
         '--task', type=str, default=DEFAULT_TASK, 
         choices=goal_example_envs)
+    parser.add_argument(
+        '--n_goal_examples', type=int, default=10)
 
     parser.add_argument(
         '--checkpoint-replay-pool',

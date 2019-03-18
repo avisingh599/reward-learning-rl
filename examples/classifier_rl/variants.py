@@ -247,6 +247,7 @@ def get_variant_spec_classifier(universe,
                                 task,
                                 policy,
                                 algorithm,
+                                n_goal_examples,
                                 *args,
                                 **kwargs):
     variant_spec = get_variant_spec_base(
@@ -261,7 +262,7 @@ def get_variant_spec_classifier(universe,
         }
 
     variant_spec['data_params'] = {
-        'n_goal_examples': 5,
+        'n_goal_examples': n_goal_examples,
         'n_goal_examples_validation_max': 100,
     }
 
@@ -294,7 +295,7 @@ def get_variant_spec_classifier(universe,
                 }
             },
 
-            #TODO Avi implement this active query frequency thing
+            #TODO Avi implement variable active query frequency
             'active_params': {
                 'active_query_frequency': 1,
             }
@@ -309,7 +310,8 @@ def get_variant_spec(args):
 
     if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
         variant_spec = get_variant_spec_classifier(
-            universe, domain, task, args.policy, args.algorithm)
+            universe, domain, task, args.policy, args.algorithm,
+            args.n_goal_examples)
     else:
         variant_spec = get_variant_spec_base(
             universe, domain, task, args.policy, args.algorithm)
