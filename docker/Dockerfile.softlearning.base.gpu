@@ -5,7 +5,7 @@
 # the container. You are encouraged to use docker-compose (docker-compose.dev.yml),
 # which should allow you to setup your environment with a single one command.
 
-FROM nvidia/cuda:9.0-base-ubuntu16.04
+FROM nvidia/cudagl:9.0-base-ubuntu16.04
 
 MAINTAINER Kristian Hartikainen <kristian.hartikainen@gmail.com>
 
@@ -141,6 +141,9 @@ RUN echo "${MJKEY}" > /root/.mujoco/mjkey.txt \
 RUN echo "conda activate softlearning" >> /root/.bashrc
 ENV BASH_ENV /root/.bashrc
 
+#Hack for gpu rendering for mujoco_py
+RUN mkdir -p /usr/lib/nvidia-384
+ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/lib/nvidia-384
 
 # =========== Container Entrypoint =============
 COPY ./docker/entrypoint.sh /entrypoint.sh
