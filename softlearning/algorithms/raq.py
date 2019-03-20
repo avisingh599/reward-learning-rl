@@ -8,12 +8,14 @@ from .sac_classifier import SACClassifier
 class RAQ(SACClassifier):
     def __init__(
             self,
+            active_query_frequency=5,
             **kwargs,
     ):
         super(RAQ, self).__init__(**kwargs)
 
         goal_example_feature_dim = self._goal_examples.shape[1]
         self._negative_examples = np.empty((0, goal_example_feature_dim))
+        self._active_query_frequency = active_query_frequency
 
     def _get_classifier_feed_dict(self):
         rand_positive_ind = np.random.randint(
@@ -47,25 +49,27 @@ class RAQ(SACClassifier):
         #select ind with highest probability/reward
         #add it to set of positives or negatives based on whether it is positve or not
 
-        batch_of_interest = self._pool.last_n_batch(self._epoch_length)
-        observations_of_interest = batch_of_interest['observations']
-        labels_of_interest = batch_of_interest['is_goal']
+        if self._epoch % self._active_query_frequency == 0:
 
-        rewards_of_interest = self._session.run(self._reward_t, feed_dict={
-                                    self._observations_ph: observations_of_interest})
+            batch_of_interest = self._pool.last_n_batch(self._epoch_length*self._active_query_frequency)
+            observations_of_interest = batch_of_interest['observations']
+            labels_of_interest = batch_of_interest['is_goal']
 
-        max_ind = np.argmax(rewards_of_interest)
+            rewards_of_interest = self._session.run(self._reward_t, feed_dict={
+                                        self._observations_ph: observations_of_interest})
 
-        if labels_of_interest[max_ind]:
-            self._goal_examples = np.concatenate([
-                    self._goal_examples,
-                    np.expand_dims(observations_of_interest[max_ind], axis=0) 
-                    ])
-        else:
-            self._negative_examples = np.concatenate([
-                    self._negative_examples,
-                    np.expand_dims(observations_of_interest[max_ind], axis=0) 
-                    ])
+            max_ind = np.argmax(rewards_of_interest)
+
+            if labels_of_interest[max_ind]:
+                self._goal_examples = np.concatenate([
+                        self._goal_examples,
+                        np.expand_dims(observations_of_interest[max_ind], axis=0) 
+                        ])
+            else:
+                self._negative_examples = np.concatenate([
+                        self._negative_examples,
+                        np.expand_dims(observations_of_interest[max_ind], axis=0) 
+                        ])
 
         #train/re-train the classifier
         if self._epoch == 0:

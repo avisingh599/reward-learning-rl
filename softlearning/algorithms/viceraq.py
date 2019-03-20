@@ -8,36 +8,40 @@ from .vice import VICE
 class VICERAQ(VICE):
     def __init__(
             self,
+            active_query_frequency=5,
             **kwargs,
     ):
         super(VICE, self).__init__(**kwargs)
+        self._active_query_frequency = active_query_frequency
 
     def _epoch_after_hook(self, *args, **kwargs):
         #TODO Avi this code is repeated from RAQ
         #figure out some clean way to reuse it
 
-        batch_of_interest = self._pool.last_n_batch(self._epoch_length)
-        observations_of_interest = batch_of_interest['observations']
-        labels_of_interest = batch_of_interest['is_goal']
+        if self._epoch % self._active_query_frequency == 0:
+            batch_of_interest = self._pool.last_n_batch(
+                self._epoch_length*self._active_query_frequency)
+            observations_of_interest = batch_of_interest['observations']
+            labels_of_interest = batch_of_interest['is_goal']
 
-        rewards_of_interest = self._session.run(self._reward_t, feed_dict={
-                                    self._observations_ph: observations_of_interest})
+            rewards_of_interest = self._session.run(self._reward_t, feed_dict={
+                                        self._observations_ph: observations_of_interest})
 
-        #TODO Avi maybe log this quantity
-        max_ind = np.argmax(rewards_of_interest)
+            #TODO Avi maybe log this quantity
+            max_ind = np.argmax(rewards_of_interest)
 
-        if labels_of_interest[max_ind]:
-            self._goal_examples = np.concatenate([
-                    self._goal_examples,
-                    np.expand_dims(observations_of_interest[max_ind], axis=0) 
-                    ])
-        #TODO Avi Figure out if it makes sense to use these
-        #"hard" negatives in some interesting way
-        # else:
-        #     self._negative_examples = np.concatenate([
-        #             self._negative_examples,
-        #             np.expand_dims(observations_of_interest[max_ind], axis=0) 
-        #             ])
+            if labels_of_interest[max_ind]:
+                self._goal_examples = np.concatenate([
+                        self._goal_examples,
+                        np.expand_dims(observations_of_interest[max_ind], axis=0) 
+                        ])
+            #TODO Avi Figure out if it makes sense to use these
+            #"hard" negatives in some interesting way
+            # else:
+            #     self._negative_examples = np.concatenate([
+            #             self._negative_examples,
+            #             np.expand_dims(observations_of_interest[max_ind], axis=0) 
+            #             ])
 
         for i in range(self._n_classifier_train_steps):
             feed_dict = self._get_classifier_feed_dict()

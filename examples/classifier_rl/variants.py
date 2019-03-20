@@ -88,8 +88,6 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
             'n_classifier_train_steps': 10000,
-            #'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
-            # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'adam',
             'reward_type': 'logits',
             'n_epochs': 200,
@@ -110,10 +108,9 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
             'n_classifier_train_steps': 100,
-            #'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
-            # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'adam',
             'reward_type': 'logits',
+            'active_query_frequency': 10,
             'n_epochs': 200,
         }
     },
@@ -131,8 +128,6 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
             'n_classifier_train_steps': 100,
-            #'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
-            # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'adam',
             'n_epochs': 200,
         }
@@ -151,9 +146,8 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_batch_size': 128,
             'n_initial_exploration_steps': int(1e3),
             'n_classifier_train_steps': 100,
-            # 'n_classifier_train_steps': tune.grid_search([10, 100, 1000]),
-            # 'classifier_optim_name': tune.grid_search(['adam', 'sgd']),
             'classifier_optim_name': 'adam',
+            'active_query_frequency': 5,
             'n_epochs': 200,
         }
     },
@@ -294,11 +288,6 @@ def get_variant_spec_classifier(universe,
                     'max_size': 1e6,
                 }
             },
-
-            #TODO Avi implement variable active query frequency
-            'active_params': {
-                'active_query_frequency': 1,
-            }
 
             })
 
