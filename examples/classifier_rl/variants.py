@@ -316,12 +316,12 @@ def get_variant_spec(args):
         variant_spec = get_variant_spec_base(
             universe, domain, task, args.policy, args.algorithm)
 
-    if 'Image84' in task:
+    if 'Image48' in task:
         preprocessor_params = {
             'type': 'convnet_preprocessor',
             'kwargs': {
                 #'image_shape': variant_spec['env_params']['image_shape'],
-                'image_shape': (84, 84, 3),
+                'image_shape': (48, 48, 3),
                 'output_size': M,
                 'conv_filters': (8, 8),
                 'conv_kernel_sizes': ((5, 5), (5, 5)),

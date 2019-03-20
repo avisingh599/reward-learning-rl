@@ -4,14 +4,14 @@ from softlearning.environments.utils import get_goal_example_environment_from_va
 
 DOOR_TASKS = [
     'StateSawyerDoorPullHookEnv-v0',
-    'Image84SawyerDoorPullHookEnv-v0'
+    'Image48SawyerDoorPullHookEnv-v0'
     ]
 
 PUSH_TASKS = [
     'StateSawyerPushSidewaysEnv-v0',
-    'Image84SawyerPushSidewaysEnv-v0',
+    'Image48SawyerPushSidewaysEnv-v0',
     'StateSawyerPushForwardEnv-v0',
-    'Image84SawyerPushForwardEnv-v0',
+    'Image48SawyerPushForwardEnv-v0',
     ]
 
 def get_goal_example_from_variant(variant):
