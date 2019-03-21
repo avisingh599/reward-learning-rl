@@ -295,7 +295,8 @@ def get_variant_spec_classifier(universe,
 
 def get_variant_spec(args):
     universe, domain = args.universe, args.domain
-    task, algorithm = args.task, args.algorithm
+    task, algorithm, n_epochs = args.task, args.algorithm, args.n_epochs
+    active_query_frequency = args.active_query_frequency
 
     if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
         variant_spec = get_variant_spec_classifier(
@@ -304,6 +305,13 @@ def get_variant_spec(args):
     else:
         variant_spec = get_variant_spec_base(
             universe, domain, task, args.policy, args.algorithm)
+
+    if args.algorithm in ['RAQ', 'VICERAQ']:
+        variant_spec['algorithm_params']['kwargs']['active_query_frequency'] = \
+            active_query_frequency
+
+    variant_spec['algorithm_params']['kwargs']['n_epochs'] = \
+            n_epochs
 
     if 'Image48' in task:
         preprocessor_params = {
