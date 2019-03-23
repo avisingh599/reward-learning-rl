@@ -4,6 +4,7 @@ from tensorflow.python.training import training_util
 
 from .sac import td_target
 from .sac_classifier import SACClassifier
+from softlearning.misc.utils import mixup
 
 class RAQ(SACClassifier):
     def __init__(
@@ -32,8 +33,8 @@ class RAQ(SACClassifier):
         labels_batch[self._classifier_batch_size:] = 1.0
         observation_batch = np.concatenate([negatives, positives], axis=0)
         
-        from softlearning.misc.utils import mixup
-        observation_batch, labels_batch = mixup(observation_batch, labels_batch)
+        if self._mixup_alpha > 0:
+            observation_batch, labels_batch = mixup(observation_batch, labels_batch, alpha=self._mixup_alpha)
         feed_dict = {
             self._observations_ph: observation_batch, 
             self._label_ph: labels_batch,

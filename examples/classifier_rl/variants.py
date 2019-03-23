@@ -91,6 +91,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_optim_name': 'adam',
             'reward_type': 'logits',
             'n_epochs': 200,
+            'mixup_alpha': 0.2,
         }
     },
     'RAQ': {
@@ -112,6 +113,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'reward_type': 'logits',
             'active_query_frequency': 10,
             'n_epochs': 200,
+            'mixup_alpha': 0.2,
         }
     },
     'VICE': {
@@ -130,6 +132,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'n_classifier_train_steps': 100,
             'classifier_optim_name': 'adam',
             'n_epochs': 200,
+            'mixup_alpha': 0.2,
         }
     },
     'VICERAQ': {
@@ -149,6 +152,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_optim_name': 'adam',
             'active_query_frequency': 5,
             'n_epochs': 200,
+            'mixup_alpha': 0.2,
         }
     },
     'SQL': {

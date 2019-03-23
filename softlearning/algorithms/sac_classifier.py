@@ -3,6 +3,7 @@ import tensorflow as tf
 from tensorflow.python.training import training_util
 
 from .sac import SAC, td_target
+from softlearning.misc.utils import mixup
 
 class SACClassifier(SAC):
     def __init__(
@@ -15,6 +16,7 @@ class SACClassifier(SAC):
             reward_type = 'logits',
             n_classifier_train_steps=int(1e4),
             classifier_optim_name='adam',
+            mixup_alpha=0.2,
             **kwargs,
     ):
         
@@ -26,7 +28,7 @@ class SACClassifier(SAC):
         self._n_classifier_train_steps = n_classifier_train_steps
         self._classifier_optim_name = classifier_optim_name
         self._classifier_batch_size = classifier_batch_size
-
+        self._mixup_alpha = mixup_alpha
         super(SACClassifier, self).__init__(**kwargs)
     
     def _build(self):
@@ -113,8 +115,9 @@ class SACClassifier(SAC):
         labels_batch[self._classifier_batch_size:] = 1.0
         observation_batch = np.concatenate([negatives, positives], axis=0)
 
-        from softlearning.misc.utils import mixup
-        observation_batch, labels_batch = mixup(observation_batch, labels_batch)
+        if self._mixup_alpha > 0:
+            observation_batch, labels_batch = mixup(observation_batch, labels_batch, alpha=self._mixup_alpha)
+
         feed_dict = {
             self._observations_ph: observation_batch,
             self._label_ph: labels_batch
