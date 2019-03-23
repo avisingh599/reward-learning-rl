@@ -54,12 +54,17 @@ def generate_push_goal_examples(total_goal_examples, env):
         env.unwrapped.set_to_goal(goal_vec)
         
         endeff_pos = env.unwrapped.get_endeff_pos()
-        puck_pos = env.unwrapped.get_puck_pos()[:2]
+        puck_pos = env.unwrapped.get_puck_pos()
 
         endeff_distance = np.linalg.norm(endeff_pos - goal_vec['state_desired_goal'][:3])
-        puck_distance = np.linalg.norm(puck_pos - goal_vec['state_desired_goal'][3:5])
+        puck_distance = np.linalg.norm(puck_pos[:2] - goal_vec['state_desired_goal'][3:5])
+        puck_endeff_distance = np.linalg.norm(puck_pos[:2] - endeff_pos[:2])
 
-        if endeff_distance < 0.05 and puck_distance < 0.03:
+        endeff_threshold = 0.05
+        puck_threshold = env.unwrapped.indicator_threshold
+        puck_radius = env.unwrapped.puck_radius
+
+        if endeff_distance < endeff_threshold and puck_distance < puck_threshold and puck_endeff_distance > puck_radius:
             ob, rew, done, info = env.step(np.asarray([0.,0.]))
             goal_examples.append(ob)
             n+=1
@@ -95,8 +100,10 @@ def generate_door_goal_examples(total_goal_examples, env):
         endeff_distance = np.linalg.norm(pos - goal_vec['state_desired_goal'][:3])
         angle_distance = np.abs(angle - goal_vec['state_desired_goal'][3])
         #state = np.concatenate([pos, angle])
+        angle_threshold = env.unwrapped.indicator_threshold[0]
+        endeff_threshold = env.unwrapped.indicator_threshold[1]
 
-        if endeff_distance < 0.05 and angle_distance < 0.05:
+        if endeff_distance < endeff_threshold and angle_distance < angle_threshold:
             ob, rew, done, info = env.step(np.asarray([0.,0.,0.]))
             goal_examples.append(ob)
             n+=1

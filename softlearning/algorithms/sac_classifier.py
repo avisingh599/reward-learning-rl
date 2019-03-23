@@ -112,13 +112,16 @@ class SACClassifier(SAC):
         labels_batch = np.zeros((2*self._classifier_batch_size,1))
         labels_batch[self._classifier_batch_size:] = 1.0
         observation_batch = np.concatenate([negatives, positives], axis=0)
-        
+
+        from softlearning.misc.utils import mixup
+        observation_batch, labels_batch = mixup(observation_batch, labels_batch)
         feed_dict = {
-            self._observations_ph: observation_batch, 
+            self._observations_ph: observation_batch,
             self._label_ph: labels_batch
         }
 
         return feed_dict
+
 
     def _train_classifier_step(self, feed_dict):
         _, loss = self._session.run([self._classifier_training_op, self._classifier_loss_t], feed_dict)

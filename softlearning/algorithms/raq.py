@@ -32,6 +32,8 @@ class RAQ(SACClassifier):
         labels_batch[self._classifier_batch_size:] = 1.0
         observation_batch = np.concatenate([negatives, positives], axis=0)
         
+        from softlearning.misc.utils import mixup
+        observation_batch, labels_batch = mixup(observation_batch, labels_batch)
         feed_dict = {
             self._observations_ph: observation_batch, 
             self._label_ph: labels_batch,
