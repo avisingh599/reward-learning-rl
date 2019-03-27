@@ -132,7 +132,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'n_classifier_train_steps': 100,
             'classifier_optim_name': 'adam',
             'n_epochs': 200,
-            'mixup_alpha': 0.2,
+            'mixup_alpha': tune.grid_search([0, 1.0]),
         }
     },
     'VICERAQ': {
@@ -152,7 +152,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_optim_name': 'adam',
             'active_query_frequency': 5,
             'n_epochs': 200,
-            'mixup_alpha': 0.2,
+            'mixup_alpha': tune.grid_search([0, 1.0]),
         }
     },
     'SQL': {
@@ -336,7 +336,7 @@ def get_variant_spec(args):
             preprocessor_params.copy())
         variant_spec['Q_params']['kwargs']['preprocessor_params'] = (
             preprocessor_params.copy())
-        variant_spec['replay_pool_params']['kwargs']['max_size'] = 3e5
+        variant_spec['replay_pool_params']['kwargs']['max_size'] = int(5e5)
 
         if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
             variant_spec['classifier_params']['kwargs']['preprocessor_params'] = (
