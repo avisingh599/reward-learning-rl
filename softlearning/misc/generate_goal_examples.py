@@ -43,37 +43,60 @@ def get_goal_example_from_variant(variant):
 
 def generate_pick_goal_examples(total_goal_examples, env):
     max_attempt = 10*total_goal_examples
+    top_level_attempts = 5
     attempts = 0
     n = 0
-    goal_examples = []
-
-    env.reset()
-
-    for i in range(100):
-        if i < 10:
-            action = np.asarray([0., 0., -1.])
-        elif i < 50:
-            action = np.asarray([0., -1.0, -1.])
-        elif i < 60:
-            action = np.asarray([0., -1.0, 1.0])
-        elif i < 100:
-            action = np.asarray([0., 1., 1.])
-
-        ob, r, d, info = env.step(action)
 
     goal_examples = []
-    for i in range(max_attempt):
-        action = np.random.uniform(low=[-1., -1., 1.0], high=[1., 1., 1.0])
-        ob, r, d, info = env.step(action)
 
-        if info['obj_success']:
-            goal_examples.append(ob)
-        else:
-            action = -1.0*action
-            action[-1] = 1.0
+    for _ in range(top_level_attempts):
+        env.reset()
+
+        for i in range(100):
+
+            obj_y = env.unwrapped.get_obj_pos()[1] - 0.02
+            hand_y = env.unwrapped.get_endeff_pos()[1]
+            goal_y = env.unwrapped.fixed_goal[4]
+
+            if i < 25:
+                if obj_y < (hand_y - 0.01):
+                    action = np.asarray([-1., 0., -1.])
+                elif obj_y > (hand_y + 0.01):
+                    action = np.asarray([1., 0., -1.])
+                else:
+                    action = np.asarray([0., 0., -1.])
+            elif i < 40:
+                action = np.asarray([0., -1.0, -1.])
+            elif i < 60:
+                action = np.asarray([0., -1.0, 1.0])
+            elif i < 80:
+                action = np.asarray([0., 1., 1.])
+            elif i < 100:
+                if goal_y < (hand_y - 0.01):
+                    action = np.asarray([-1., 0., 1.])
+                elif goal_y > (hand_y + 0.01):
+                    action = np.asarray([1., 0., 1.])
+                else:
+                    action = np.asarray([0., 0., 1.])
+
+            ob, r, d, info = env.step(action)
+
+        goal_examples = []
+        for i in range(max_attempt):
+            action = np.random.uniform(low=[-1., -1., 1.], high=[1., 1., 1.])
+            ob, r, d, info = env.step(action)
+
+            if info['obj_success']:
+                goal_examples.append(ob)
+            else:
+                action = -1.0*action
+                action[-1] = 1.0
+
+            if len(goal_examples) >= total_goal_examples:
+               break
 
         if len(goal_examples) >= total_goal_examples:
-           break
+            break
 
     assert len(goal_examples) == total_goal_examples, 'Could not generate enough goal examples'
     goal_examples = np.asarray(goal_examples)
