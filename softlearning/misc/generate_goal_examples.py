@@ -2,6 +2,11 @@ import numpy as np
 
 from softlearning.environments.utils import get_goal_example_environment_from_variant
 
+PICK_TASKS = [
+    'StateSawyerPickAndPlaceEnv-v0',
+    'Image48SawyerPickAndPlaceEnv-v0'
+    ]
+
 DOOR_TASKS = [
     'StateSawyerDoorPullHookEnv-v0',
     'Image48SawyerDoorPullHookEnv-v0'
@@ -24,6 +29,8 @@ def get_goal_example_from_variant(variant):
         goal_examples = generate_door_goal_examples(total_goal_examples, env)
     elif variant['task'] in PUSH_TASKS:
         goal_examples = generate_push_goal_examples(total_goal_examples, env)
+    elif variant['task'] in PICK_TASKS:
+        goal_examples = generate_pick_goal_examples(total_goal_examples, env)
     else:
         raise NotImplementedError
 
@@ -33,6 +40,45 @@ def get_goal_example_from_variant(variant):
     goal_examples_validation = goal_examples[n_goal_examples:]
 
     return goal_examples_train, goal_examples_validation
+
+def generate_pick_goal_examples(total_goal_examples, env):
+    max_attempt = 10*total_goal_examples
+    attempts = 0
+    n = 0
+    goal_examples = []
+
+    env.reset()
+
+    for i in range(100):
+        if i < 10:
+            action = np.asarray([0., 0., -1.])
+        elif i < 50:
+            action = np.asarray([0., -1.0, -1.])
+        elif i < 60:
+            action = np.asarray([0., -1.0, 1.0])
+        elif i < 100:
+            action = np.asarray([0., 1., 1.])
+
+        ob, r, d, info = env.step(action)
+
+    goal_examples = []
+    for i in range(max_attempt):
+        action = np.random.uniform(low=[-1., -1., 1.0], high=[1., 1., 1.0])
+        ob, r, d, info = env.step(action)
+
+        if info['obj_success']:
+            goal_examples.append(ob)
+        else:
+            action = -1.0*action
+            action[-1] = 1.0
+
+        if len(goal_examples) >= total_goal_examples:
+           break
+
+    assert len(goal_examples) == total_goal_examples, 'Could not generate enough goal examples'
+    goal_examples = np.asarray(goal_examples)
+
+    return goal_examples
 
 def generate_push_goal_examples(total_goal_examples, env):
     max_attempt = 5*total_goal_examples

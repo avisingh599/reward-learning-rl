@@ -2,7 +2,7 @@ from ray import tune
 import numpy as np
 
 from softlearning.misc.utils import get_git_rev, deep_update
-from softlearning.misc.generate_goal_examples import DOOR_TASKS, PUSH_TASKS
+from softlearning.misc.generate_goal_examples import DOOR_TASKS, PUSH_TASKS, PICK_TASKS
 
 M = 256
 REPARAMETERIZE = True
@@ -270,6 +270,8 @@ def get_variant_spec_classifier(universe,
             is_goal_key = 'angle_success'
         elif task in PUSH_TASKS:
             is_goal_key = 'puck_success'
+        elif task in PICK_TASKS:
+            is_goal_key = 'obj_success'
         else:
             raise NotImplementedError('Success metric not defined for task')
 
