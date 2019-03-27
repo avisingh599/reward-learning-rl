@@ -91,7 +91,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_optim_name': 'adam',
             'reward_type': 'logits',
             'n_epochs': 200,
-            'mixup_alpha': 0.2,
+            'mixup_alpha': 1.0,
         }
     },
     'RAQ': {
@@ -113,7 +113,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'reward_type': 'logits',
             'active_query_frequency': 10,
             'n_epochs': 200,
-            'mixup_alpha': 0.2,
+            'mixup_alpha': 1.0,
         }
     },
     'VICE': {
