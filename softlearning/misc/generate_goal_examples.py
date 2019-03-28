@@ -158,12 +158,22 @@ def generate_door_goal_examples(total_goal_examples, env):
             'state_desired_goal': env.unwrapped.fixed_goal
         }
 
-        goal_vec['state_desired_goal'][:3] += np.random.uniform(low=-0.01, high=0.01, size=(3,))
-        goal_vec['state_desired_goal'][3] += np.random.uniform(low=-0.01, high=0.01)
+        for j in range(100):
+
+            if j < 25:
+                act = [0.1, 1, -0.2]
+            elif j < 100:
+                act = [0.0, -0.4, 0.0]
+
+            act += np.random.uniform(low=-0.01, high=0.01, size=3)
+            ob, rew, done, info = env.step(np.asarray(act))
+
+        # goal_vec['state_desired_goal'][:3] += np.random.uniform(low=-0.01, high=0.01, size=(3,))
+        # goal_vec['state_desired_goal'][3] += np.random.uniform(low=-0.01, high=0.01)
         
-        env.unwrapped.set_to_goal_pos(goal_vec['state_desired_goal'][:3])
-        env.unwrapped.set_to_goal_angle(goal_vec['state_desired_goal'][3])
-        
+        # env.unwrapped.set_to_goal_pos(goal_vec['state_desired_goal'][:3])
+        # env.unwrapped.set_to_goal_angle(goal_vec['state_desired_goal'][3])
+
         pos = env.unwrapped.get_endeff_pos() 
         angle = env.unwrapped.get_door_angle()
         endeff_distance = np.linalg.norm(pos - goal_vec['state_desired_goal'][:3])
