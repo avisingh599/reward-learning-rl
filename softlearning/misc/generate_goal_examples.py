@@ -154,6 +154,7 @@ def generate_door_goal_examples(total_goal_examples, env):
 
         attempts+= 1
         env.reset()
+        env.unwrapped._set_door_pos(0 + np.random.uniform(low=0., high=0.1))
         goal_vec = {
             'state_desired_goal': env.unwrapped.fixed_goal
         }
@@ -161,7 +162,7 @@ def generate_door_goal_examples(total_goal_examples, env):
         for j in range(100):
 
             if j < 25:
-                act = [0.1, 1, -0.2]
+                act = [0.1, 1, -0.5]
             elif j < 100:
                 act = [0.0, -0.4, 0.0]
 
