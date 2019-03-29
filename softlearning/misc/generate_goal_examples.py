@@ -145,7 +145,7 @@ def generate_push_goal_examples(total_goal_examples, env):
 
 def generate_door_goal_examples(total_goal_examples, env):
 
-    max_attempt = 5*total_goal_examples
+    max_attempt = 10*total_goal_examples
     attempts = 0
     n = 0
     goal_examples = []
@@ -161,10 +161,13 @@ def generate_door_goal_examples(total_goal_examples, env):
 
         for j in range(100):
 
+            door_angle = env.unwrapped.get_door_angle()
             if j < 25:
-                act = [0.1, 1, -0.5]
-            elif j < 100:
+                act = [0.05, 1, -0.5]
+            elif j < 100 and door_angle < 0.8:
                 act = [0.0, -0.4, 0.0]
+            else:
+                act = [0.,0.,0.]
 
             act += np.random.uniform(low=-0.01, high=0.01, size=3)
             ob, rew, done, info = env.step(np.asarray(act))
@@ -183,7 +186,8 @@ def generate_door_goal_examples(total_goal_examples, env):
         angle_threshold = env.unwrapped.indicator_threshold[0]
         endeff_threshold = env.unwrapped.indicator_threshold[1]
 
-        if endeff_distance < endeff_threshold and angle_distance < angle_threshold:
+        # if endeff_distance < endeff_threshold and angle_distance < angle_threshold:
+        if info['angle_success']:
             ob, rew, done, info = env.step(np.asarray([0.,0.,0.]))
             goal_examples.append(ob)
             n+=1
