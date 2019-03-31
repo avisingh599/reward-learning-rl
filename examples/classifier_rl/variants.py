@@ -132,7 +132,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'n_classifier_train_steps': 100,
             'classifier_optim_name': 'adam',
             'n_epochs': 200,
-            'mixup_alpha': tune.grid_search([0, 1.0]),
+            'mixup_alpha': 1.0,
         }
     },
     'VICERAQ': {
@@ -152,7 +152,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'classifier_optim_name': 'adam',
             'active_query_frequency': 5,
             'n_epochs': 200,
-            'mixup_alpha': tune.grid_search([0, 1.0]),
+            'mixup_alpha': 1.0,
         }
     },
     'SQL': {
