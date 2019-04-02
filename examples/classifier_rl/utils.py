@@ -159,7 +159,7 @@ def get_parser(allow_policy_list=False):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--universe', type=str, default='multiworld', choices=('multiworld,'))
+        '--universe', type=str, default='multiworld', choices=('multiworld', ))
     parser.add_argument(
         '--domain', type=str, default='mujoco', choices=('mujoco',))
     parser.add_argument(
