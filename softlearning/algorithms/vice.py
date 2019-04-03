@@ -36,7 +36,7 @@ class VICE(SACClassifier):
 
         return Q_target
 
-    def _init_classifier_udpate(self):
+    def _init_classifier_update(self):
         log_p = self._classifier([self._observations_ph])
         sampled_actions = self._policy.actions([self._observations_ph])
         log_pi = self._policy.log_pis([self._observations_ph], sampled_actions)
