@@ -46,6 +46,7 @@ Markdown==3.0.1
 matplotlib==3.0.2
 more-itertools==4.3.0
 mujoco-py==1.50.1.68
+git+https://github.com/avisingh599/multiworld.git
 networkx==2.2
 numpy==1.16.0
 opencv-python==4.0.0.21
