@@ -170,7 +170,7 @@ def get_parser(allow_policy_list=False):
     parser.add_argument(
         '--n_epochs', type=int, default=200)
     parser.add_argument(
-        '--active_query_frequency', type=int, default=5)
+        '--active_query_frequency', type=int, default=1)
 
     parser.add_argument(
         '--checkpoint-replay-pool',
