@@ -159,7 +159,7 @@ def get_parser(allow_policy_list=False):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--universe', type=str, default='multiworld', choices=('multiworld,'))
+        '--universe', type=str, default='multiworld', choices=('multiworld',))
     parser.add_argument(
         '--domain', type=str, default='mujoco', choices=('mujoco',))
     parser.add_argument(
@@ -170,7 +170,7 @@ def get_parser(allow_policy_list=False):
     parser.add_argument(
         '--n_epochs', type=int, default=200)
     parser.add_argument(
-        '--active_query_frequency', type=int, default=5)
+        '--active_query_frequency', type=int, default=1)
 
     parser.add_argument(
         '--checkpoint-replay-pool',
