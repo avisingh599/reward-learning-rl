@@ -338,7 +338,7 @@ def get_variant_spec(args):
             preprocessor_params.copy())
         variant_spec['Q_params']['kwargs']['preprocessor_params'] = (
             preprocessor_params.copy())
-        variant_spec['replay_pool_params']['kwargs']['max_size'] = int(5e5)
+        variant_spec['replay_pool_params']['kwargs']['max_size'] = int(n_epochs*1000)
 
         if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
             variant_spec['classifier_params']['kwargs']['preprocessor_params'] = (
