@@ -11,7 +11,7 @@ class VICERAQ(VICE):
             active_query_frequency=5,
             **kwargs,
     ):
-        super(VICE, self).__init__(**kwargs)
+        super(VICERAQ, self).__init__(**kwargs)
         self._active_query_frequency = active_query_frequency
 
     def _epoch_after_hook(self, *args, **kwargs):
@@ -52,7 +52,7 @@ class VICERAQ(VICE):
                         batch,
                         training_paths,
                         evaluation_paths):
-        diagnostics = super(VICE, self).get_diagnostics(
+        diagnostics = super(VICERAQ, self).get_diagnostics(
             iteration, batch, training_paths, evaluation_paths)
 
         diagnostics.update({

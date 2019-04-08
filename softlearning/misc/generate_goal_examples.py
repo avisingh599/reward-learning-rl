@@ -4,12 +4,14 @@ from softlearning.environments.utils import get_goal_example_environment_from_va
 
 PICK_TASKS = [
     'StateSawyerPickAndPlaceEnv-v0',
-    'Image48SawyerPickAndPlaceEnv-v0'
+    'Image48SawyerPickAndPlaceEnv-v0',
+    'StateSawyerPickAndPlace3DEnv-v0',
+    'Image48SawyerPickAndPlace3DEnv-v0',
     ]
 
 DOOR_TASKS = [
     'StateSawyerDoorPullHookEnv-v0',
-    'Image48SawyerDoorPullHookEnv-v0'
+    'Image48SawyerDoorPullHookEnv-v0',
     ]
 
 PUSH_TASKS = [
@@ -30,7 +32,7 @@ def get_goal_example_from_variant(variant):
     elif variant['task'] in PUSH_TASKS:
         goal_examples = generate_push_goal_examples(total_goal_examples, env)
     elif variant['task'] in PICK_TASKS:
-        goal_examples = generate_pick_goal_examples(total_goal_examples, env)
+        goal_examples = generate_pick_goal_examples(total_goal_examples, env, variant['task'])
     else:
         raise NotImplementedError
 
@@ -41,64 +43,82 @@ def get_goal_example_from_variant(variant):
 
     return goal_examples_train, goal_examples_validation
 
-def generate_pick_goal_examples(total_goal_examples, env):
-    max_attempt = 10*total_goal_examples
-    top_level_attempts = 5
+def generate_pick_goal_examples(total_goal_examples, env, task_name):
+    max_attempt = 50
+    top_level_attempts = 10*total_goal_examples
     attempts = 0
     n = 0
 
     goal_examples = []
-
+    gain = 5.0
     for _ in range(top_level_attempts):
         env.reset()
 
         for i in range(100):
 
-            obj_y = env.unwrapped.get_obj_pos()[1] - 0.02
-            hand_y = env.unwrapped.get_endeff_pos()[1]
-            goal_y = env.unwrapped.fixed_goal[4]
+            if '3D' in task_name:
+                obj_xy = env.unwrapped.get_obj_pos()[:2]
+                hand_xy = env.unwrapped.get_endeff_pos()[:2]
+                goal_xy = env.unwrapped.fixed_goal[3:5]
 
-            if i < 25:
-                if obj_y < (hand_y - 0.01):
-                    action = np.asarray([-1., 0., -1.])
-                elif obj_y > (hand_y + 0.01):
-                    action = np.asarray([1., 0., -1.])
-                else:
-                    action = np.asarray([0., 0., -1.])
-            elif i < 40:
-                action = np.asarray([0., -1.0, -1.])
-            elif i < 60:
-                action = np.asarray([0., -1.0, 1.0])
-            elif i < 80:
-                action = np.asarray([0., 1., 1.])
-            elif i < 100:
-                if goal_y < (hand_y - 0.01):
-                    action = np.asarray([-1., 0., 1.])
-                elif goal_y > (hand_y + 0.01):
-                    action = np.asarray([1., 0., 1.])
-                else:
-                    action = np.asarray([0., 0., 1.])
+                hand_obj_distance = np.linalg.norm(obj_xy - 0.02 - hand_xy)
+                goal_obj_distance = np.linalg.norm(obj_xy- goal_xy)
 
-            ob, r, d, info = env.step(action)
+                if i < 25:
+                    if hand_obj_distance > 0.015:
+                        action_xy = gain*(obj_xy - hand_xy)
+                    else:
+                        action_xy = [0., 0.]
+                    action = np.asarray([action_xy[0], action_xy[1], 0., -1])
+                elif i < 35:
+                    action = np.asarray([0., 0, -1, -1.])
+                elif i < 45:
+                    action = np.asarray([0., 0, -1,  1.])
+                elif i < 60:
+                    action = np.asarray([0., 0, +1,  1.])
+                elif i < 100:
+                    if goal_obj_distance > 0.015:
+                        action_xy = gain*(goal_xy - obj_xy)
+                    else:
+                        action_xy = [0., 0.]
+                    action = np.asarray([action_xy[0], action_xy[1], 0., 1.])
 
-        goal_examples = []
-        for i in range(max_attempt):
-            action = np.random.uniform(low=[-1., -1., 1.], high=[1., 1., 1.])
-            ob, r, d, info = env.step(action)
-
-            if info['obj_success']:
-                goal_examples.append(ob)
             else:
-                action = -1.0*action
-                action[-1] = 1.0
 
-            if len(goal_examples) >= total_goal_examples:
-               break
+                obj_y = env.unwrapped.get_obj_pos()[1] - 0.02
+                hand_y = env.unwrapped.get_endeff_pos()[1]
+                goal_y = env.unwrapped.fixed_goal[4]
+
+                if i < 25:
+                    if obj_y < (hand_y - 0.01):
+                        action = np.asarray([-1., 0., -1.])
+                    elif obj_y > (hand_y + 0.01):
+                        action = np.asarray([1., 0., -1.])
+                    else:
+                        action = np.asarray([0., 0., -1.])
+                elif i < 40:
+                    action = np.asarray([0., -1.0, -1.])
+                elif i < 60:
+                    action = np.asarray([0., -1.0, 1.0])
+                elif i < 80:
+                    action = np.asarray([0., 1., 1.])
+                elif i < 100:
+                    if goal_y < (hand_y - 0.01):
+                        action = np.asarray([-1., 0., 1.])
+                    elif goal_y > (hand_y + 0.01):
+                        action = np.asarray([1., 0., 1.])
+                    else:
+                        action = np.asarray([0., 0., 1.])
+
+            ob, r, d, info = env.step(action)
+
+        if info['obj_success']:
+            goal_examples.append(ob)
 
         if len(goal_examples) >= total_goal_examples:
             break
 
-    assert len(goal_examples) == total_goal_examples, 'Could not generate enough goal examples'
+    assert len(goal_examples) == total_goal_examples, f'Could not generate enough goal examples: {len(goal_examples)}'
     goal_examples = np.asarray(goal_examples)
 
     return goal_examples
