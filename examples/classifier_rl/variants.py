@@ -132,7 +132,7 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'n_classifier_train_steps': 10,
             'classifier_optim_name': 'adam',
             'n_epochs': 200,
-            'mixup_alpha': 0.,
+            'mixup_alpha': 1.0,
         }
     },
     'VICERAQ': {
