@@ -1,6 +1,7 @@
 # reward-learning-rl
 
 This repository is an implementation of the following paper: 
+
 **End-to-End Robotic Reinforcement Learning without Reward Engineering**
 Avi Singh, Larry Yang, Kristian Hartikainen, Chelsea Finn, Sergey Levine
 on arxiv - [TODO add link here when the arxiv goes live]
