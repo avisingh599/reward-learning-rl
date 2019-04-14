@@ -2,8 +2,8 @@
 
 This repository is an implementation of the following paper: 
 
-**End-to-End Robotic Reinforcement Learning without Reward Engineering**
-Avi Singh, Larry Yang, Kristian Hartikainen, Chelsea Finn, Sergey Levine
+**End-to-End Robotic Reinforcement Learning without Reward Engineering** <br/>
+Avi Singh, Larry Yang, Kristian Hartikainen, Chelsea Finn, Sergey Levine <br/>
 on arxiv - [TODO add link here when the arxiv goes live]
 
 We propose a method for end-to-end to learning of robotic skills in real world using deep reinforcement learning. We learn these policies directly on pixel observations, and we do so without any hand-engineered or task-specific reward functions, and instead learn the rewards for such tasks from a small number of goal examples (around 10). 
