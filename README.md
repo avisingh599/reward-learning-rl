@@ -94,7 +94,7 @@ softlearning run_example_local examples.classifier_rl \
 --n_epochs 300 \
 --active_query_frequency 10
 ```
-The tasks used in the paper were `Image48SawyerPushForwardEnv-v0`, `Image48SawyerDoorPullHookEnv-v0` and `Image48SawyerPickAndPlace3DEnv-v0`.  For the algorithm, you can experiment with `VICERAQ`, `VICE`,  `RAQ`, `SACClassifier`, and `SAC`. The `--num-sample` flag specifies the number of random seeds launched. All results in the paper were averaged across five random seeds. The hyperparameters are stored in `examples/classifier_rl/variants.py`. 
+The tasks used in the paper were `Image48SawyerPushForwardEnv-v0`, `Image48SawyerDoorPullHookEnv-v0` and `Image48SawyerPickAndPlace3DEnv-v0`.  For the algorithm, you can experiment with `VICERAQ`, `VICE`,  `RAQ`, `SACClassifier`, and `SAC`. The `--num-samples` flag specifies the number of random seeds launched. All results in the paper were averaged across five random seeds. The hyperparameters are stored in `examples/classifier_rl/variants.py`. 
 
 `examples.classifier_rl.main` contains several different environments. For more information about the agents and configurations, run the scripts with `--help` flag: `python ./examples/classifier_rl/main.py --help`. 
 
