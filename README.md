@@ -9,7 +9,7 @@ arXiv 2019 <br/>
 
 | Visual Draping             |  Visual Pushing | Visual Bookshelf | 
 :-------------------------:|:-------------------------:|:-------------------------:
-![](https://lh5.googleusercontent.com/LijlWmUtupIz-NHFK0_EpRFnLYIfXBu-N2MckhLOAr9YYbi5onOLrXddSUlweyCUMuSQa_AEcOBNbgWNH3HFLXF1Rmh7TXi_qSMd2i0S8YSxffxyq8k=w371)  |  ![](https://lh4.googleusercontent.com/J-ltHmdkasD_F6Y1_9v_gqMqPem0XhImWQuFaCScdWn0hiNooqHhotRSQ4dLIhm2cmZlbYICffN0c05hoqn2oNzbiNtS2gI7LFhSCTlTQ6ARS_OpMrE=w371) |  ![](https://lh4.googleusercontent.com/Drp8HHXCp3ITy47iLOdoT0Bd9XrWQ1x_XtLgBRzl090Yso9bzuRH2DtpycCBFKPnzB_ySaI6hbnuoUU3reM7-cVBPUfKWNf2PQvdtWrEoqhlTtCCceA=w371) <br/> ![](https://lh4.googleusercontent.com/Drp8HHXCp3ITy47iLOdoT0Bd9XrWQ1x_XtLgBRzl090Yso9bzuRH2DtpycCBFKPnzB_ySaI6hbnuoUU3reM7-cVBPUfKWNf2PQvdtWrEoqhlTtCCceA=w371)
+![](https://imgur.com/tePm5hA.gif)  |  ![](https://imgur.com/Bfipr0t.gif) |  ![](https://imgur.com/c4RHUvn.gif) <br/> ![](https://imgur.com/0mmIhe4.gif)
 
 
 | Visual Door Opening      |   Visual Pusher | Visual Picker | 
