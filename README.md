@@ -32,17 +32,17 @@ The environment can be run either locally using conda or inside a docker contain
 
 2. Copy your MuJoCo license key (mjkey.txt) to ~/.mujoco/mjkey.txt:
 
-3. Clone `softlearning`
+3. Clone `reward-learning-rl`
 ```
-git clone https://github.com/rail-berkeley/softlearning.git ${SOFTLEARNING_PATH}
+git clone https://github.com/avisingh599/reward-learning-rl.git ${REWARD_LEARNING_PATH}
 ```
 
 4. Create and activate conda environment, install softlearning to enable command line interface.
 ```
-cd ${SOFTLEARNING_PATH}
+cd ${REWARD_LEARNING_PATH}
 conda env create -f environment.yml
 conda activate softlearning
-pip install -e ${SOFTLEARNING_PATH}
+pip install -e ${REWARD_LEARNING_PATH}
 ```
 
 The environment should be ready to run. See examples section for examples of how to train and simulate the agents.
@@ -94,7 +94,7 @@ softlearning run_example_local examples.classifier_rl \
 --n_epochs 300 \
 --active_query_frequency 10
 ```
-The tasks used in the paper were `Image48SawyerPushForwardEnv-v0`, `Image48SawyerDoorPullHookEnv-v0` and `Image48SawyerPickAndPlace3DEnv-v0`.  For the algorithm, you can experiments with `VICERAQ`, `VICE`,  `RAQ`, `SACClassifier`, and `SAC`. The `num-sample` flag specifies the number of random seeds launched. All results in the paper were averaged across five random seeds. The hyperparameters are stored in `examples/classifier_rl/variants.py`. 
+The tasks used in the paper were `Image48SawyerPushForwardEnv-v0`, `Image48SawyerDoorPullHookEnv-v0` and `Image48SawyerPickAndPlace3DEnv-v0`.  For the algorithm, you can experiment with `VICERAQ`, `VICE`,  `RAQ`, `SACClassifier`, and `SAC`. The `--num-sample` flag specifies the number of random seeds launched. All results in the paper were averaged across five random seeds. The hyperparameters are stored in `examples/classifier_rl/variants.py`. 
 
 `examples.classifier_rl.main` contains several different environments. For more information about the agents and configurations, run the scripts with `--help` flag: `python ./examples/classifier_rl/main.py --help`. 
 
