@@ -5,7 +5,7 @@ This repository is the official implementation of the following paper:
 **End-to-End Robotic Reinforcement Learning without Reward Engineering** <br/>
 Avi Singh, Larry Yang, Kristian Hartikainen, Chelsea Finn, Sergey Levine <br/>
 arXiv 2019 <br/>
-[Website](https://sites.google.com/view/reward-learning-rl/) | [Video](https://www.youtube.com/watch?v=9pWJzb4G-CA) | [Arxiv](todo)
+[Website](https://sites.google.com/view/reward-learning-rl/) | [Video](https://www.youtube.com/watch?v=9pWJzb4G-CA) | [Arxiv](https://arxiv.org/abs/1904.07854)
 
 | Visual Draping             |  Visual Pushing | Visual Bookshelf | 
 :-------------------------:|:-------------------------:|:-------------------------:
