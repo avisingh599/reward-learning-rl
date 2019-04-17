@@ -102,8 +102,8 @@ If this codebase helps you in your academic research, you are encouraged to cite
 ```
 @article{singh2019,
   title={End-to-End Robotic Reinforcement Learning without Reward Engineering},
-  author={Avi Singh, Larry Yang, Kristian Hartikainen, Chelsea Finn, and Sergey Levine},
-  journal={arXiv preprint arXiv:1904.TODO},
+  author={Avi Singh and Larry Yang and Kristian Hartikainen and Chelsea Finn and Sergey Levine},
+  journal={arXiv preprint arXiv:1904.07854},
   year={2019}
 }
 ```
