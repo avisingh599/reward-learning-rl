@@ -7,9 +7,14 @@ from . import (
     dummy_sampler,
     extra_policy_info_sampler,
     remote_sampler,
+<<<<<<< HEAD
     sampler_base,
     simple_sampler,
     active_sampler)
+=======
+    base_sampler,
+    simple_sampler)
+>>>>>>> 1f6686d765052c874dcf28f8036acde742decd79
 
 
 def get_sampler_from_variant(variant, *args, **kwargs):
@@ -18,7 +23,7 @@ def get_sampler_from_variant(variant, *args, **kwargs):
         'ExtraPolicyInfoSampler': (
             extra_policy_info_sampler.ExtraPolicyInfoSampler),
         'RemoteSampler': remote_sampler.RemoteSampler,
-        'Sampler': sampler_base.BaseSampler,
+        'Sampler': base_sampler.BaseSampler,
         'SimpleSampler': simple_sampler.SimpleSampler,
         'ActiveSampler': active_sampler.ActiveSampler,
 
@@ -89,10 +94,6 @@ def rollout(env,
     return path
 
 
-def rollouts(env, policy, path_length, n_paths, render_mode=None):
-    paths = [
-        rollout(env, policy, path_length, render_mode=render_mode)
-        for i in range(n_paths)
-    ]
-
+def rollouts(n_paths, *args, **kwargs):
+    paths = [rollout(*args, **kwargs) for i in range(n_paths)]
     return paths

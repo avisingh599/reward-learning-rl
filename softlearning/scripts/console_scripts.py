@@ -7,8 +7,8 @@ locally, in google compute engine, or ec2).
 
 There are two types of cli commands in this file (each have their corresponding
 function in examples.instrument):
-1. run_example_* methods, which run the experiments by invoking
-    `tune.run_experiments` function.
+1. run_example_* methods, which run the experiments by invoking `tune.run`
+    function.
 2. launch_example_* methods, which are helpers function to submit an
     example to be run in the cloud. In practice, these launch a cluster,
     and then run the `run_example_cluster` method with the provided
@@ -77,18 +77,7 @@ def run_example_local_cmd(example_module_name, example_argv):
 @click.argument("example_module_name", required=True, type=str)
 @click.argument('example_argv', nargs=-1, type=click.UNPROCESSED)
 def run_example_debug_cmd(example_module_name, example_argv):
-    """The debug mode limits tune trial runs to enable use of debugger.
-
-    TODO(hartikainen): The debug mode should allow easy switch between
-    parallelized andnon-parallelized runs such that the debugger can be
-    reasonably used when running the code. This could be implemented for
-    example by requiring a custom resource (e.g. 'debug-resource') that
-    limits the number of parallel runs to one. For this to work, tune needs to
-    merge the support for custom resources:
-    https://github.com/ray-project/ray/pull/2979. Alternatively, this could be
-    implemented using the 'local_mode' argument for ray.init(), once tune
-    supports it.
-    """
+    """The debug mode limits tune trial runs to enable use of debugger."""
     return run_example_debug(example_module_name, example_argv)
 
 

@@ -11,80 +11,12 @@ from softlearning.misc.utils import datetimestamp
 
 
 DEFAULT_UNIVERSE = 'gym'
-DEFAULT_DOMAIN = 'Swimmer'
-DEFAULT_TASK = 'Default'
+DEFAULT_DOMAIN = 'Pendulum'
+DEFAULT_TASK = 'v0'
 DEFAULT_ALGORITHM = 'SAC'
 
-
-TASKS_BY_DOMAIN_BY_UNIVERSE = {
-    universe: {
-        domain: tuple(tasks)
-        for domain, tasks in domains.items()
-    }
-    for universe, domains in env_utils.ENVIRONMENTS.items()
-}
-
-AVAILABLE_TASKS = set(sum(
-    [
-        tasks
-        for universe, domains in TASKS_BY_DOMAIN_BY_UNIVERSE.items()
-        for domain, tasks in domains.items()
-    ],
-    ()))
-
-DOMAINS_BY_UNIVERSE = {
-    universe: tuple(domains)
-    for universe, domains in env_utils.ENVIRONMENTS.items()
-}
-
-AVAILABLE_DOMAINS = set(sum(DOMAINS_BY_UNIVERSE.values(), ()))
-
-UNIVERSES = tuple(env_utils.ENVIRONMENTS)
-
+AVAILABLE_UNIVERSES = tuple(env_utils.UNIVERSES)
 AVAILABLE_ALGORITHMS = set(alg_utils.ALGORITHM_CLASSES.keys())
-
-
-def parse_universe(env_name):
-    universe = next(
-        (universe for universe in UNIVERSES if universe in env_name),
-        DEFAULT_UNIVERSE)
-    return universe
-
-
-def parse_domain_task(env_name, universe):
-    env_name = env_name.replace(universe, '').strip('-')
-    domains = DOMAINS_BY_UNIVERSE[universe]
-    domain = next(domain for domain in domains if domain in env_name)
-
-    env_name = env_name.replace(domain, '').strip('-')
-    tasks = TASKS_BY_DOMAIN_BY_UNIVERSE[universe][domain]
-    task = next((task for task in tasks if task == env_name), None)
-
-    if task is None:
-        matching_tasks = [task for task in tasks if task in env_name]
-        if len(matching_tasks) > 1:
-            raise ValueError(
-                "Task name cannot be unmbiguously determined: {}."
-                " Following task names match: {}"
-                "".format(env_name, matching_tasks))
-        elif len(matching_tasks) == 1:
-            task = matching_tasks[-1]
-        else:
-            task = DEFAULT_TASK
-
-    return domain, task
-
-
-def parse_universe_domain_task(args):
-    universe, domain, task = args.universe, args.domain, args.task
-
-    if not universe:
-        universe = parse_universe(args.env)
-
-    if (not domain) or (not task):
-        domain, task = parse_domain_task(args.env, universe)
-
-    return universe, domain, task
 
 
 def add_ray_init_args(parser):
@@ -110,7 +42,7 @@ def add_ray_init_args(parser):
     parser.add_argument(
         '--include-webui',
         type=str,
-        default=True,
+        default=False,
         help=init_help_string("Boolean flag indicating whether to start the"
                               "web UI, which is a Jupyter notebook."))
     parser.add_argument(
@@ -126,7 +58,7 @@ def add_ray_init_args(parser):
 def add_ray_tune_args(parser):
 
     def tune_help_string(help_string):
-        return help_string + " Passed to `tune.run_experiments`."
+        return help_string + " Passed to `tune.run`."
 
     parser.add_argument(
         '--resources-per-trial',
@@ -134,11 +66,21 @@ def add_ray_tune_args(parser):
         default={},
         help=tune_help_string("Resources to allocate for each trial."))
     parser.add_argument(
+        '--trial-cpus',
+        type=int,
+        default=multiprocessing.cpu_count(),
+        help=tune_help_string(
+            "CPUs to allocate for each trial. Note: this is only used for"
+            " Ray's internal scheduling bookkeeping, and is not an actual hard"
+            " limit for CPUs."))
+    parser.add_argument(
         '--trial-gpus',
         type=float,
         default=None,
-        help=("Resources to allocate for each trial. Passed"
-              " to `tune.run_experiments`."))
+        help=tune_help_string(
+            "GPUs to allocate for each trial. Note: this is only used for"
+            " Ray's internal scheduling bookkeeping, and is not an actual hard"
+            " limit for GPUs."))
     parser.add_argument(
         '--trial-extra-cpus',
         type=int,
@@ -165,21 +107,10 @@ def add_ray_tune_args(parser):
     parser.add_argument(
         '--trial-name-template',
         type=str,
-        default=None,
+        default='id={trial.trial_id}-seed={trial.config[run_params][seed]}',
         help=tune_help_string(
             "Optional string template for trial name. For example:"
             " '{trial.trial_id}-seed={trial.config[run_params][seed]}'"))
-    parser.add_argument(
-        '--trial-name-creator',
-        default=None,
-        help=tune_help_string(
-            "Optional creator function for the trial string, used in "
-            "generating a trial directory."))
-    parser.add_argument(
-        '--trial-cpus',
-        type=int,
-        default=multiprocessing.cpu_count(),
-        help=tune_help_string("Resources to allocate for each trial."))
     parser.add_argument(
         '--checkpoint-frequency',
         type=int,
@@ -213,10 +144,15 @@ def add_ray_tune_args(parser):
             " Defaults to None."))
     parser.add_argument(
         '--with-server',
-        type=str,
-        default=False,
+        type=lambda x: bool(strtobool(x)),
+        default=True,
         help=tune_help_string("Starts a background Tune server. Needed for"
                               " using the Client API."))
+    parser.add_argument(
+        '--server-port',
+        type=int,
+        default=4321,
+        help=tune_help_string("Port number for launching TuneServer."))
 
     return parser
 
@@ -225,11 +161,16 @@ def get_parser(allow_policy_list=False):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--universe', type=str, choices=UNIVERSES, default=None)
+        '--universe',
+        type=str,
+        choices=AVAILABLE_UNIVERSES,
+        default=DEFAULT_UNIVERSE)
     parser.add_argument(
-        '--domain', type=str, choices=AVAILABLE_DOMAINS, default=None)
+        '--domain',
+        type=str,
+        default=DEFAULT_DOMAIN)
     parser.add_argument(
-        '--task', type=str, choices=AVAILABLE_TASKS, default=DEFAULT_TASK)
+        '--task', type=str, default=DEFAULT_TASK)
 
     parser.add_argument(
         '--checkpoint-replay-pool',
@@ -283,7 +224,6 @@ def get_parser(allow_policy_list=False):
 
     parser = add_ray_init_args(parser)
     parser = add_ray_tune_args(parser)
-    # parser = add_ray_autoscaler_exec_args(parser)
 
     return parser
 

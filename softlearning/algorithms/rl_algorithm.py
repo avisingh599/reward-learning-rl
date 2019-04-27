@@ -6,6 +6,7 @@ import math
 import os
 
 import tensorflow as tf
+from tensorflow.python.training import training_util
 import numpy as np
 
 from softlearning.samplers import rollouts
@@ -79,6 +80,12 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
         self._timestep = 0
         self._num_train_steps = 0
 
+    def _init_global_step(self):
+        self.global_step = training_util.get_or_create_global_step()
+        self._training_ops.update({
+            'increment_global_step': training_util._increment_global_step(1)
+        })
+
     def _initial_exploration_hook(self, env, initial_exploration_policy, pool):
         if self._n_initial_exploration_steps < 1: return
 
@@ -130,7 +137,11 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
         total_timestep = self._epoch * self._epoch_length + self._timestep
         return total_timestep
 
-    def _train(self, env, policy, pool, initial_exploration_policy=None):
+    def train(self, *args, **kwargs):
+        """Initiate training of the SAC instance."""
+        return self._train(*args, **kwargs)
+
+    def _train(self):
         """Return a generator that performs RL training.
 
         Args:
@@ -140,15 +151,18 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
                 If None, then all exploration is done using policy
             pool (`PoolBase`): Sample pool to add samples to
         """
+        training_environment = self._training_environment
+        evaluation_environment = self._evaluation_environment
+        policy = self._policy
+        pool = self._pool
 
         if not self._training_started:
             self._init_training()
 
             self._initial_exploration_hook(
-                env, initial_exploration_policy, pool)
+                training_environment, self._initial_exploration_policy, pool)
 
-        self.sampler.initialize(env, policy, pool)
-        evaluation_env = env.copy() if self._eval_n_episodes else None
+        self.sampler.initialize(training_environment, policy, pool)
 
         gt.reset_root()
         gt.rename_root('RLAlgorithm')
@@ -185,11 +199,12 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
             training_paths = self.sampler.get_last_n_paths(
                 math.ceil(self._epoch_length / self.sampler._max_path_length))
             gt.stamp('training_paths')
-            evaluation_paths = self._evaluation_paths(policy, evaluation_env)
+            evaluation_paths = self._evaluation_paths(
+                policy, evaluation_environment)
             gt.stamp('evaluation_paths')
 
-
-            training_metrics = self._evaluate_rollouts(training_paths, env)
+            training_metrics = self._evaluate_rollouts(
+                training_paths, training_environment)
             gt.stamp('training_metrics')
             
             should_save_path = (
@@ -209,7 +224,7 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
 
             if evaluation_paths:
                 evaluation_metrics = self._evaluate_rollouts(
-                    evaluation_paths, evaluation_env)
+                    evaluation_paths, evaluation_environment)
                 gt.stamp('evaluation_metrics')
             else:
                 evaluation_metrics = {}
@@ -251,10 +266,10 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
             )))
 
             if self._eval_render_mode is not None and hasattr(
-                    evaluation_env, 'render_rollouts'):
+                    evaluation_environment, 'render_rollouts'):
                 # TODO(hartikainen): Make this consistent such that there's no
                 # need for the hasattr check.
-                env.render_rollouts(evaluation_paths)
+                training_environment.render_rollouts(evaluation_paths)
 
             yield diagnostics
 
@@ -262,15 +277,17 @@ class RLAlgorithm(tf.contrib.checkpoint.Checkpointable):
 
         self._training_after_hook()
 
+        yield {'done': True, **diagnostics}
+
     def _evaluation_paths(self, policy, evaluation_env):
         if self._eval_n_episodes < 1: return ()
 
         with policy.set_deterministic(self._eval_deterministic):
             paths = rollouts(
+                self._eval_n_episodes,
                 evaluation_env,
                 policy,
                 self.sampler._max_path_length,
-                self._eval_n_episodes,
                 render_mode=self._eval_render_mode)
 
         should_save_video = (

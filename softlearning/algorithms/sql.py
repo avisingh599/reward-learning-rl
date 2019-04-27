@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 import numpy as np
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 from softlearning.misc.kernel import adaptive_isotropic_gaussian_kernel
 
@@ -20,17 +21,19 @@ class SQL(RLAlgorithm):
     """Soft Q-learning (SQL).
 
     Example:
-        See `examples/mujoco_all_sql.py`.
+        See `examples/development.py`.
 
-    Reference:
-        [1] Tuomas Haarnoja, Haoran Tang, Pieter Abbeel, and Sergey Levine,
+    References
+    ----------
+    [1] Tuomas Haarnoja, Haoran Tang, Pieter Abbeel, and Sergey Levine,
         "Reinforcement Learning with Deep Energy-Based Policies," International
         Conference on Machine Learning, 2017. https://arxiv.org/abs/1702.08165
     """
 
     def __init__(
             self,
-            env,
+            training_environment,
+            evaluation_environment,
             policy,
             Qs,
             pool,
@@ -39,7 +42,7 @@ class SQL(RLAlgorithm):
             policy_lr=3e-4,
             Q_lr=3e-4,
             value_n_particles=16,
-            td_target_update_interval=1,
+            target_update_interval=1,
             kernel_fn=adaptive_isotropic_gaussian_kernel,
             kernel_n_particles=16,
             kernel_update_ratio=0.5,
@@ -66,7 +69,7 @@ class SQL(RLAlgorithm):
             Q_lr (`float`): Learning rate used for the Q-function approximator.
             value_n_particles (`int`): The number of action samples used for
                 estimating the value of next state.
-            td_target_update_interval (`int`): How often the target network is
+            target_update_interval (`int`): How often the target network is
                 updated to match the current Q-function.
             kernel_fn (function object): A function object that represents
                 a kernel function.
@@ -87,7 +90,8 @@ class SQL(RLAlgorithm):
         """
         super(SQL, self).__init__(**kwargs)
 
-        self._env = env
+        self._training_environment = training_environment
+        self._evaluation_environment = evaluation_environment
         self._policy = policy
 
         self._Qs = Qs
@@ -95,7 +99,6 @@ class SQL(RLAlgorithm):
 
         self._pool = pool
         self._plotter = plotter
-        self._env = env
 
         self._Q_lr = Q_lr
         self._policy_lr = policy_lr
@@ -104,7 +107,7 @@ class SQL(RLAlgorithm):
         self._reward_scale = reward_scale
 
         self._value_n_particles = value_n_particles
-        self._Q_target_update_interval = td_target_update_interval
+        self._Q_target_update_interval = target_update_interval
 
         self._kernel_fn = kernel_fn
         self._kernel_n_particles = kernel_n_particles
@@ -114,20 +117,13 @@ class SQL(RLAlgorithm):
         self._train_Q = train_Q
         self._train_policy = train_policy
 
-        observation_shape = env.active_observation_shape
-        action_shape = env.action_space.shape
+        observation_shape = training_environment.active_observation_shape
+        action_shape = training_environment.action_space.shape
 
         assert len(observation_shape) == 1, observation_shape
         self._observation_shape = observation_shape
         assert len(action_shape) == 1, action_shape
         self._action_shape = action_shape
-
-        self._create_placeholders()
-
-        self._training_ops = []
-
-        self._create_td_update()
-        self._create_svgd_update()
 
         if use_saved_Q:
             saved_Q_weights = tuple(Q.get_weights() for Q in self._Qs)
@@ -142,8 +138,22 @@ class SQL(RLAlgorithm):
         if use_saved_policy:
             self._policy.set_weights(saved_policy_weights)
 
-    def _create_placeholders(self):
+        self._build()
+
+    def _build(self):
+        self._training_ops = {}
+
+        self._init_global_step()
+        self._init_placeholders()
+        self._init_td_update()
+        self._init_svgd_update()
+        self._init_diagnostics_ops()
+
+    def _init_placeholders(self):
         """Create all necessary placeholders."""
+
+        self._iteration_ph = tf.placeholder(
+            tf.int64, shape=None, name='iteration')
 
         self._observations_ph = tf.placeholder(
             tf.float32,
@@ -175,7 +185,7 @@ class SQL(RLAlgorithm):
             shape=(None, 1),
             name='terminals')
 
-    def _create_td_update(self):
+    def _init_td_update(self):
         """Create a minimization operation for Q-function update."""
 
         next_observations = tf.tile(
@@ -209,7 +219,7 @@ class SQL(RLAlgorithm):
         assert_shape(next_value, [None, 1])
 
         # Importance weights add just a constant to the value.
-        next_value -= tf.log(tf.to_float(self._value_n_particles))
+        next_value -= tf.log(tf.cast(self._value_n_particles, tf.float32))
         next_value += np.prod(self._action_shape) * np.log(2)
 
         # \hat Q in Equation 11:
@@ -241,20 +251,13 @@ class SQL(RLAlgorithm):
                     name='{}_{}_optimizer'.format(Q._name, i)
                 ) for i, Q in enumerate(self._Qs))
             Q_training_ops = tuple(
-                tf.contrib.layers.optimize_loss(
-                    Q_loss,
-                    None,
-                    learning_rate=self._Q_lr,
-                    optimizer=Q_optimizer,
-                    variables=Q.trainable_variables,
-                    increment_global_step=False,
-                    summaries=())
+                Q_optimizer.minimize(loss=Q_loss, var_list=Q.trainable_variables)
                 for i, (Q, Q_loss, Q_optimizer)
                 in enumerate(zip(self._Qs, Q_losses, self._Q_optimizers)))
 
-            self._training_ops.append(tf.group(Q_training_ops))
+            self._training_ops.update({'Q': tf.group(Q_training_ops)})
 
-    def _create_svgd_update(self):
+    def _init_svgd_update(self):
         """Create a minimization operation for policy update (SVGD)."""
 
         actions = self._policy.actions([
@@ -347,18 +350,26 @@ class SQL(RLAlgorithm):
             svgd_training_op = self._policy_optimizer.minimize(
                 loss=-surrogate_loss,
                 var_list=self._policy.trainable_variables)
-            self._training_ops.append(svgd_training_op)
+            self._training_ops.update({
+                'svgd': svgd_training_op
+            })
 
-    def train(self, *args, **kwargs):
-        """Initiate training of the SAC instance."""
+    def _init_diagnostics_ops(self):
+        diagnosables = OrderedDict((
+            ('Q_value', self._Q_values),
+            ('Q_loss', self._Q_losses),
+        ))
 
-        return self._train(
-            self._env,
-            self._policy,
-            self._pool,
-            initial_exploration_policy=self._initial_exploration_policy,
-            *args,
-            **kwargs)
+        diagnostic_metrics = OrderedDict((
+            ('mean', tf.reduce_mean),
+            ('std', lambda x: tfp.stats.stddev(x, sample_axis=None)),
+        ))
+
+        self._diagnostics_ops = OrderedDict([
+            (f'{key}-{metric_name}', metric_fn(values))
+            for key, values in diagnosables.items()
+            for metric_name, metric_fn in diagnostic_metrics.items()
+        ])
 
     def _init_training(self):
         self._update_target(tau=1.0)
@@ -377,16 +388,16 @@ class SQL(RLAlgorithm):
     def _do_training(self, iteration, batch):
         """Run the operations for updating training and target ops."""
 
-        feed_dict = self._get_feed_dict(batch)
+        feed_dict = self._get_feed_dict(iteration, batch)
         self._session.run(self._training_ops, feed_dict)
 
         if iteration % self._Q_target_update_interval == 0 and self._train_Q:
             self._update_target()
 
-    def _get_feed_dict(self, batch):
+    def _get_feed_dict(self, iteration, batch):
         """Construct a TensorFlow feed dictionary from a sample batch."""
 
-        feeds = {
+        feed_dict = {
             self._observations_ph: batch['observations'],
             self._actions_ph: batch['actions'],
             self._next_observations_ph: batch['next_observations'],
@@ -394,7 +405,10 @@ class SQL(RLAlgorithm):
             self._terminals_ph: batch['terminals'],
         }
 
-        return feeds
+        if iteration is not None:
+            feed_dict[self._iteration_ph] = iteration
+
+        return feed_dict
 
     def get_diagnostics(self,
                         iteration,
@@ -410,46 +424,19 @@ class SQL(RLAlgorithm):
         Also call the `draw` method of the plotter, if plotter is defined.
         """
 
-        feeds = self._get_feed_dict(batch)
-        Q_values, Q_losses =  self._session.run(
-            [self._Q_values, self._Q_losses], feeds)
+        feed_dict = self._get_feed_dict(iteration, batch)
+        diagnostics = self._session.run(self._diagnostics_ops, feed_dict)
 
-        diagnostics = OrderedDict({
-            'Q-avg': np.mean(Q_values),
-            'Q-std': np.std(Q_values),
-            'Q_loss': np.mean(Q_losses),
-        })
-
-        policy_diagnostics = self._policy.get_diagnostics(batch['observations'])
-        diagnostics.update({
-            f'policy/{key}': value
-            for key, value in policy_diagnostics.items()
-        })
+        diagnostics.update(OrderedDict([
+            (f'policy/{key}', value)
+            for key, value in
+            self._policy.get_diagnostics(batch['observations']).items()
+        ]))
 
         if self._plotter:
             self._plotter.draw()
 
         return diagnostics
-
-    def get_snapshot(self, epoch):
-        """Return loggable snapshot of the SQL algorithm.
-
-        If `self._save_full_state == True`, returns snapshot including the
-        replay pool. If `self._save_full_state == False`, returns snapshot
-        of policy, Q-function, and environment instances.
-        """
-
-        state = {
-            'epoch': epoch,
-            'policy': self._policy,
-            'Q': self._Q,
-            'env': self._env,
-        }
-
-        if self._save_full_state:
-            state.update({'replay_pool': self._pool})
-
-        return state
 
     @property
     def tf_saveables(self):
