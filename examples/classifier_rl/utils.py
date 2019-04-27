@@ -151,6 +151,11 @@ def add_ray_tune_args(parser):
         default=False,
         help=tune_help_string("Starts a background Tune server. Needed for"
                               " using the Client API."))
+    parser.add_argument(
+        '--server-port',
+        type=int,
+        default=4321,
+        help=tune_help_string("Port number for launching TuneServer."))
 
     return parser
 

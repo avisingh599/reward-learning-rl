@@ -26,18 +26,22 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
     def _build(self):
         variant = copy.deepcopy(self._variant)
 
-        env = self.env = get_goal_example_environment_from_variant(variant)
+        training_environment = self.training_environment = (
+            get_goal_example_environment_from_variant(variant))
+        evaluation_environment = self.evaluation_environment = (
+            get_goal_example_environment_from_variant(variant))
         replay_pool = self.replay_pool = (
-            get_replay_pool_from_variant(variant, env))
+            get_replay_pool_from_variant(variant, training_environment))
         sampler = self.sampler = get_sampler_from_variant(variant)
-        Qs = self.Qs = get_Q_function_from_variant(variant, env)
-        policy = self.policy = get_policy_from_variant(variant, env, Qs)
+        Qs = self.Qs = get_Q_function_from_variant(variant, training_environment)
+        policy = self.policy = get_policy_from_variant(variant, training_environment, Qs)
         initial_exploration_policy = self.initial_exploration_policy = (
-            get_policy('UniformPolicy', env))
+            get_policy('UniformPolicy', training_environment))
 
         algorithm_kwargs = {
             'variant': self._variant,
-            'env': self.env,
+            'training_environment': self.training_environment,
+            'evaluation_environment': self.evaluation_environment,
             'policy': policy,
             'initial_exploration_policy': initial_exploration_policy,
             'Qs': Qs,
@@ -48,7 +52,7 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
 
         if self._variant['algorithm_params']['type'] in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
             reward_classifier = self.reward_classifier \
-                = get_reward_classifier_from_variant(self._variant, env)
+                = get_reward_classifier_from_variant(self._variant, training_environment)
             algorithm_kwargs['classifier'] = reward_classifier
 
             goal_examples_train, goal_examples_validation = \
@@ -73,10 +77,13 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
             with open(pickle_path, 'rb') as f:
                 picklable = pickle.load(f)
 
-        env = self.env = picklable['env']
+        training_environment = self.training_environment = picklable[
+            'training_environment']
+        evaluation_environment = self.evaluation_environment = picklable[
+            'evaluation_environment']
 
         replay_pool = self.replay_pool = (
-            get_replay_pool_from_variant(self._variant, env))
+            get_replay_pool_from_variant(self._variant, training_environment))
 
         if self._variant['run_params'].get('checkpoint_replay_pool', False):
             self._restore_replay_pool(checkpoint_dir)
@@ -85,14 +92,15 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
         Qs = self.Qs = picklable['Qs']
         # policy = self.policy = picklable['policy']
         policy = self.policy = (
-            get_policy_from_variant(self._variant, env, Qs))
+            get_policy_from_variant(self._variant, training_environment, Qs))
         self.policy.set_weights(picklable['policy_weights'])
         initial_exploration_policy = self.initial_exploration_policy = (
-            get_policy('UniformPolicy', env))
+            get_policy('UniformPolicy', training_environment))
 
         algorithm_kwargs = {
             'variant': self._variant,
-            'env': self.env,
+            'training_environment': self.training_environment,
+            'evaluation_environment': self.evaluation_environment,
             'policy': policy,
             'initial_exploration_policy': initial_exploration_policy,
             'Qs': Qs,
@@ -131,7 +139,8 @@ class ExperimentRunnerClassifierRL(ExperimentRunner):
     def picklables(self):
         picklables = {
             'variant': self._variant,
-            'env': self.env,
+            'training_environment': self.training_environment,
+            'evaluation_environment': self.evaluation_environment,
             'sampler': self.sampler,
             'algorithm': self.algorithm,
             'Qs': self.Qs,

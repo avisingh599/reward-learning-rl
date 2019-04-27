@@ -90,9 +90,9 @@ class SACClassifier(SAC):
                 optimizer=self._classifier_optimizer,
                 variables=self._classifier.trainable_variables,
                 increment_global_step=False,
-                summaries=((
-                    "loss", "gradients", "gradient_norm", "global_gradient_norm"
-                ) if self._tf_summaries else ())
+                # summaries=((
+                #     "loss", "gradients", "gradient_norm", "global_gradient_norm"
+                # ) if self._tf_summaries else ())
                 )
 
         return classifier_training_op

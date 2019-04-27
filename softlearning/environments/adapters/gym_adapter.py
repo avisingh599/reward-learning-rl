@@ -55,7 +55,7 @@ class GymAdapter(SoftlearningEnv):
         assert not args, (
             "Gym environments don't support args. Use kwargs instead.")
 
-        self._Serializable__initialize(locals())
+        # self._Serializable__initialize(locals())
 
         self.normalize = normalize
         self.unwrap_time_limit = unwrap_time_limit
