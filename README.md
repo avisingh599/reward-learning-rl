@@ -4,7 +4,7 @@ This repository is the official implementation of the following paper:
 
 **End-to-End Robotic Reinforcement Learning without Reward Engineering** <br/>
 Avi Singh, Larry Yang, Kristian Hartikainen, Chelsea Finn, Sergey Levine <br/>
-arXiv 2019 <br/>
+[Robotics: Science and Systems](http://www.roboticsconference.org/) 2019 <br/>
 [Website](https://sites.google.com/view/reward-learning-rl/) | [Video](https://www.youtube.com/watch?v=9pWJzb4G-CA) | [Arxiv](https://arxiv.org/abs/1904.07854)
 
 | Visual Draping             |  Visual Pushing | Visual Bookshelf | 
@@ -98,12 +98,28 @@ The tasks used in the paper were `Image48SawyerPushForwardEnv-v0`, `Image48Sawye
 
 `examples.classifier_rl.main` contains several different environments. For more information about the agents and configurations, run the scripts with `--help` flag: `python ./examples/classifier_rl/main.py --help`. 
 
+## Version history
+
+### v0.1
+- This version contains the code to reproduce the results in Singh et al, RSS 2019. 
+
+## Citation
 If this codebase helps you in your academic research, you are encouraged to cite our paper. Here is an example bibtex:
 ```
 @article{singh2019,
   title={End-to-End Robotic Reinforcement Learning without Reward Engineering},
   author={Avi Singh and Larry Yang and Kristian Hartikainen and Chelsea Finn and Sergey Levine},
-  journal={arXiv preprint arXiv:1904.07854},
+  journal={Robotics: Science and Systems},
   year={2019}
+}
+```
+
+If you mainly use the VICE algorithm implemented here, you should also cite:
+``` 
+@article{fu2018,
+  title={Variational Inverse Control with Events: A General Framework for Data-Driven Reward Definition},
+  author={Justin Fu and Avi Singh and Dibya Ghosh and Larry Yang and Sergey Levine},
+  journal={Neural Information Processing Systems},
+  year={2018}
 }
 ```
