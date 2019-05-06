@@ -21,6 +21,13 @@ def create_VICE_algorithm(variant, *args, **kwargs):
 
     return algorithm
 
+def create_VICE_GAN_algorithm(variant, *args, **kwargs):
+    from .vice_gan import VICEGAN
+
+    algorithm = VICEGAN(*args, **kwargs)
+
+    return algorithm
+
 def create_VICE_RAQ_algorithm(variant, *args, **kwargs):
     from .viceraq import VICERAQ
 
@@ -50,6 +57,7 @@ ALGORITHM_CLASSES = {
     'SACClassifier': create_SAC_Classifier_algorithm,
     'RAQ': create_RAQ_algorithm,
     'VICE': create_VICE_algorithm,
+    'VICEGAN': create_VICE_GAN_algorithm,
     'VICERAQ': create_VICE_RAQ_algorithm,
 }
 

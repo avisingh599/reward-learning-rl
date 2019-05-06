@@ -135,6 +135,25 @@ ALGORITHM_PARAMS_ADDITIONAL = {
             'mixup_alpha': 1.0,
         }
     },
+    'VICEGAN': {
+        'type': 'VICEGAN',
+        'kwargs': {
+            'reparameterize': REPARAMETERIZE,
+            'lr': 3e-4,
+            'target_update_interval': 1,
+            'tau': 5e-3,
+            'target_entropy': 'auto',
+            'store_extra_policy_info': False,
+            'action_prior': 'uniform',
+            'classifier_lr': 1e-4,
+            'classifier_batch_size': 128,
+            'n_initial_exploration_steps': int(1e3),
+            'n_classifier_train_steps': 10,
+            'classifier_optim_name': 'adam',
+            'n_epochs': 200,
+            'mixup_alpha': 1.0,
+        }
+    },
     'VICERAQ': {
         'type': 'VICERAQ',
         'kwargs': {
@@ -304,7 +323,7 @@ def get_variant_spec(args):
     task, algorithm, n_epochs = args.task, args.algorithm, args.n_epochs
     active_query_frequency = args.active_query_frequency
 
-    if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
+    if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICEGAN', 'VICERAQ']:
         variant_spec = get_variant_spec_classifier(
             universe, domain, task, args.policy, args.algorithm,
             args.n_goal_examples)
@@ -340,7 +359,7 @@ def get_variant_spec(args):
             preprocessor_params.copy())
         variant_spec['replay_pool_params']['kwargs']['max_size'] = int(n_epochs*1000)
 
-        if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICERAQ']:
+        if args.algorithm in ['SACClassifier', 'RAQ', 'VICE', 'VICEGAN', 'VICERAQ']:
             variant_spec['classifier_params']['kwargs']['preprocessor_params'] = (
                 preprocessor_params.copy())
 
