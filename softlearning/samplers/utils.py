@@ -67,10 +67,17 @@ def rollout(env,
 
         if render_mode is not None:
             if render_mode == 'rgb_array':
-                image = env.render(mode=render_mode)
+                #note: this will only work for mujoco-py environments
+                if hasattr(env.unwrapped, 'imsize'):
+                    imsize = env.unwrapped.imsize
+                else:
+                    imsize = 200
+                image = env.unwrapped.sim.render(imsize, imsize)
+                #image = env.render(mode=render_mode)
                 images.append(image)
             else:
-                env.render()
+                raise NotImplementedError
+                # env.render()
 
         if terminal:
             policy.reset()
