@@ -60,7 +60,7 @@ To build the image and run the container:
 ```
 export MJKEY="$(cat ~/.mujoco/mjkey.txt)" \
     && docker-compose \
-        -f ./docker/docker-compose.dev.cpu.yml \
+        -f ./docker/docker-compose.dev.gpu.yml \
         up \
         -d \
         --force-recreate
@@ -77,7 +77,7 @@ See examples section for examples of how to train and simulate the agents.
 Finally, to clean up the docker setup:
 ```
 docker-compose \
-    -f ./docker/docker-compose.dev.cpu.yml \
+    -f ./docker/docker-compose.dev.gpu.yml \
     down \
     --rmi all \
     --volumes
