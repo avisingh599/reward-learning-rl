@@ -78,7 +78,7 @@ psutil==5.4.8
 ray[rllib,debug]==0.6.6
 redis==3.0.1
 requests==2.20.1
-rsa==3.4.2
+rsa==4.1
 ruamel-yaml==0.15.46
 s3transfer==0.2.0
 scikit-image==0.14.2
