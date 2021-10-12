@@ -52,7 +52,7 @@ git+https://github.com/avisingh599/multiworld.git@19bf319422c0016260166bf64e1945
 git+https://github.com/hartikainen/mujoco-py.git@29fcd26290c9417aef0f82d0628d29fa0dbf0fab
 networkx==2.2
 numpy==1.16.0
-opencv-python==4.0.0.21
+opencv-python==4.1.1.26
 pandas==0.23.4
 Pillow==5.3.0
 plotly==1.9.6
