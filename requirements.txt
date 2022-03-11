@@ -54,7 +54,7 @@ networkx==2.2
 numpy==1.16.0
 opencv-python==4.0.0.21
 pandas==0.23.4
-Pillow==5.3.0
+Pillow==9.0.1
 plotly==1.9.6
 pluggy==0.8.0
 protobuf==3.6.1
